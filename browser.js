@@ -35,6 +35,7 @@
     { title: 'YouTube', url: 'https://www.youtube.com' },
     { title: 'Google', url: 'https://www.google.com' }
   ];
+  const GROUP_COLORS = ['#3b82f6', '#16a34a', '#f97316', '#a855f7', '#e11d48', '#0891b2', '#ca8a04', '#64748b'];
 
   const $ = selector => document.querySelector(selector);
   const tabStrip = $('#tabStrip');
@@ -265,7 +266,7 @@
   function normalizeProjects(saved) {
     const normalized = {};
     if (saved && typeof saved === 'object') {
-      Object.entries(saved).forEach(([id, project]) => {
+      Object.entries(saved).forEach(([id, project], index) => {
         if (!project.custom && !id.startsWith('custom:')) return;
         normalized[id] = {
           id,
@@ -273,6 +274,7 @@
           custom: true,
           tabs: Array.isArray(project.tabs) ? project.tabs : [],
           recents: [],
+          color: validGroupColor(project.color) || groupColorFor(id, index),
           updatedAt: Number(project.updatedAt) || Date.now()
         };
       });
@@ -282,7 +284,8 @@
 
   function ensureProject(id, name, url = '', target = projects) {
     if (!id || id === 'project:start' || !id.startsWith('custom:')) return null;
-    if (!target[id]) target[id] = { id, name, custom: true, tabs: [], recents: [], updatedAt: Date.now() };
+    if (!target[id]) target[id] = { id, name, custom: true, tabs: [], recents: [], color: groupColorFor(id), updatedAt: Date.now() };
+    if (!target[id].color) target[id].color = groupColorFor(id);
     if (url && url !== START_URL && !target[id].tabs.some(tab => tab.url === url)) {
       target[id].tabs.push({ title: titleFromUrl(url), url, active: false });
     }
@@ -359,13 +362,17 @@
   }
 
   function renderTabs() {
-    tabStrip.innerHTML = tabs.map(tab => `
-      <button class="browser-tab ${tab.id === activeTabId ? 'is-active' : ''}" type="button" data-tab="${tab.id}" draggable="true">
-        ${tab.projectId && projects[tab.projectId]?.custom ? '<span class="browser-tab-group-dot" aria-hidden="true"></span>' : ''}
+    tabStrip.innerHTML = tabs.map(tab => {
+      const project = projects[tab.projectId];
+      const grouped = Boolean(project?.custom);
+      return `
+      <button class="browser-tab ${tab.id === activeTabId ? 'is-active' : ''} ${grouped ? 'is-grouped' : ''}" type="button" data-tab="${tab.id}" draggable="true" ${grouped ? `style="${projectStyle(project)}" title="${escapeAttr(project.name)}"` : ''}>
+        ${grouped ? `<span class="browser-tab-group-dot" aria-hidden="true"></span><span class="browser-tab-group-chip">${escapeHtml(project.name)}</span>` : ''}
         <span class="browser-tab-title">${escapeHtml(tab.title)}</span>
-        <span class="browser-tab-close" data-close="${tab.id}" aria-label="Tab schliessen">×</span>
+        <span class="browser-tab-close" data-close="${tab.id}" aria-label="Tab schliessen">x</span>
       </button>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function renderPage(tab) {
@@ -407,20 +414,32 @@
   }
 
   function renderProjectGroups() {
-    return orderedProjects().map(project => `
-      <div class="browser-project-group">
+    return orderedProjects().map(project => {
+      const items = projectTabItems(project);
+      return `
+      <div class="browser-project-group" style="${projectStyle(project)}">
         <div class="browser-project-head">
           <button class="browser-project-title" type="button" data-open-project="${escapeAttr(project.id)}">
             <span>${escapeHtml(project.name)}</span>
-            <small>${project.tabs.length} Tabs</small>
+            <small>${items.length} ${items.length === 1 ? 'Tab' : 'Tabs'}</small>
           </button>
           <button class="browser-project-rename" type="button" data-rename-project="${escapeAttr(project.id)}" aria-label="Tabgruppe ${escapeAttr(project.name)} umbenennen" title="Tabgruppe umbenennen">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
           </button>
         </div>
-        ${project.tabs.slice(0, 4).map(itemButton).join('')}
+        ${items.filter(item => item.url !== START_URL).slice(0, 4).map(itemButton).join('')}
       </div>
-    `).join('');
+    `;
+    }).join('');
+  }
+
+  function projectTabItems(project) {
+    const openTabs = tabs
+      .filter(tab => tab.projectId === project.id)
+      .map(tab => ({ title: tab.title, url: tab.url, active: tab.id === activeTabId }));
+    const openUrls = new Set(openTabs.map(tab => tab.url));
+    const savedTabs = (project.tabs || []).filter(tab => !openUrls.has(tab.url));
+    return [...openTabs, ...savedTabs];
   }
 
   function itemButton(item) {
@@ -479,10 +498,10 @@
 
   function createProject() {
     const fallback = tabGroupName();
-    const name = cleanProjectName(window.prompt('Name der Tabgruppe', fallback), '');
+    const name = requestProjectName('Name der Tabgruppe', fallback);
     if (!name) return;
     const id = makeGroupId(name);
-    projects[id] = projects[id] || { id, name, custom: true, tabs: [], recents: [], updatedAt: Date.now() };
+    projects[id] = projects[id] || { id, name, custom: true, tabs: [], recents: [], color: groupColorFor(id), updatedAt: Date.now() };
     newTab(START_URL, id);
     setStatus(`${name} wurde erstellt.`);
   }
@@ -490,7 +509,7 @@
   function renameProject(projectId) {
     const project = projects[projectId];
     if (!project?.custom) return;
-    const name = cleanProjectName(window.prompt('Name der Tabgruppe', project.name), '');
+    const name = requestProjectName('Name der Tabgruppe', project.name);
     if (!name) return;
     project.name = name;
     project.updatedAt = Date.now();
@@ -501,6 +520,26 @@
 
   function cleanProjectName(value, fallback = 'Tabgruppe') {
     return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 42) || fallback;
+  }
+
+  function requestProjectName(message, fallback) {
+    const value = window.prompt(message, fallback);
+    if (value === null) return '';
+    return cleanProjectName(value, fallback);
+  }
+
+  function validGroupColor(color) {
+    return /^#[0-9a-f]{6}$/i.test(String(color || '')) ? color : '';
+  }
+
+  function groupColorFor(id, offset = 0) {
+    const seed = String(id || 'tabgruppe').split('').reduce((sum, char) => sum + char.charCodeAt(0), offset);
+    return GROUP_COLORS[Math.abs(seed) % GROUP_COLORS.length];
+  }
+
+  function projectStyle(project) {
+    const color = validGroupColor(project?.color) || groupColorFor(project?.id);
+    return `--group-color:${color}`;
   }
 
   function makeGroupId(name) {
@@ -554,10 +593,13 @@
     const dragged = tabs.find(tab => tab.id === dragId);
     const target = tabs.find(tab => tab.id === targetId);
     if (!dragged || !target) return;
-    const groupId = target.projectId && projects[target.projectId]?.custom
-      ? target.projectId
-      : makeGroupId(tabGroupName());
-    projects[groupId] = projects[groupId] || { id: groupId, name: tabGroupName(), custom: true, tabs: [], recents: [], updatedAt: Date.now() };
+    const targetProject = target.projectId && projects[target.projectId]?.custom ? projects[target.projectId] : null;
+    const fallbackName = tabGroupName();
+    const newName = targetProject ? targetProject.name : requestProjectName('Name der neuen Tabgruppe', fallbackName);
+    if (!newName) return;
+    const groupId = targetProject ? targetProject.id : makeGroupId(newName);
+    projects[groupId] = projects[groupId] || { id: groupId, name: newName, custom: true, tabs: [], recents: [], color: groupColorFor(groupId), updatedAt: Date.now() };
+    if (!projects[groupId].color) projects[groupId].color = groupColorFor(groupId);
     dragged.projectId = groupId;
     target.projectId = groupId;
     projects[groupId].updatedAt = Date.now();

@@ -115,7 +115,7 @@
 
 .browser-tab {
   width: min(220px, 34vw);
-  min-width: 132px;
+  min-width: 148px;
   height: 34px;
   padding: 0 8px 0 12px;
   display: flex;
@@ -151,12 +151,39 @@
   background: var(--accent-bg);
 }
 
+.browser-tab.is-grouped {
+  border-color: color-mix(in oklch, var(--group-color), var(--border) 60%);
+  background: color-mix(in oklch, var(--group-color), var(--surface) 88%);
+  box-shadow: inset 0 3px 0 var(--group-color);
+  color: var(--ink);
+}
+
+.browser-tab.is-grouped.is-active {
+  border-color: color-mix(in oklch, var(--group-color), var(--border) 35%);
+  background: color-mix(in oklch, var(--group-color), var(--bg) 84%);
+}
+
 .browser-tab-group-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   flex: 0 0 auto;
-  background: var(--accent);
+  background: var(--group-color);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--group-color), transparent 72%);
+}
+
+.browser-tab-group-chip {
+  max-width: 68px;
+  min-width: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: color-mix(in oklch, var(--group-color), transparent 82%);
+  color: var(--group-color);
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .browser-tab.is-active {
@@ -567,6 +594,8 @@
   min-width: 0;
   display: grid;
   gap: 7px;
+  padding-left: 8px;
+  border-left: 3px solid var(--group-color);
 }
 
 .browser-project-group + .browser-project-group {
@@ -584,12 +613,12 @@
 .browser-project-title {
   height: 46px;
   padding: 7px 10px;
-  border: 1px solid color-mix(in oklch, var(--accent), var(--border) 65%);
+  border: 1px solid color-mix(in oklch, var(--group-color), var(--border) 58%);
   border-radius: 8px;
   display: grid;
   gap: 2px;
-  background: var(--accent-bg);
-  color: var(--accent);
+  background: color-mix(in oklch, var(--group-color), var(--surface) 88%);
+  color: var(--group-color);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -599,7 +628,7 @@
   width: 38px;
   height: 46px;
   padding: 0;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklch, var(--group-color), var(--border) 65%);
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -610,8 +639,8 @@
 }
 
 .browser-project-rename:hover {
-  border-color: var(--ink-soft);
-  background: var(--surface-2);
+  border-color: var(--group-color);
+  background: color-mix(in oklch, var(--group-color), var(--surface-2) 86%);
 }
 
 .browser-project-rename svg {
