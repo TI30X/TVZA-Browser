@@ -163,6 +163,14 @@
   background: color-mix(in oklch, var(--group-color), var(--bg) 84%);
 }
 
+.browser-tab-group-summary {
+  width: min(240px, 40vw);
+  border-color: color-mix(in oklch, var(--group-color), var(--border) 45%);
+  background: color-mix(in oklch, var(--group-color), var(--surface) 82%);
+  box-shadow: inset 0 3px 0 var(--group-color);
+  color: var(--ink);
+}
+
 .browser-tab-group-dot {
   width: 8px;
   height: 8px;
@@ -184,6 +192,32 @@
   color: var(--group-color);
   font-size: 10px;
   font-weight: 800;
+}
+
+.browser-tab-collapse,
+.browser-tab-expand {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+}
+
+.browser-tab-collapse:hover,
+.browser-tab-expand:hover {
+  background: color-mix(in oklch, var(--group-color), transparent 86%);
+}
+
+.browser-tab-collapse svg,
+.browser-tab-expand svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .browser-tab.is-active {
@@ -464,6 +498,54 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.browser-side-header {
+  width: 100%;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.browser-side-header:hover .browser-side-title {
+  color: var(--ink);
+}
+
+.browser-side-chevron {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+}
+
+.browser-side-chevron svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(90deg);
+  transition: transform 140ms ease;
+}
+
+[data-collapsible-section].is-collapsed .browser-side-chevron svg {
+  transform: rotate(0deg);
+}
+
+[data-collapsible-section].is-collapsed > :not(.browser-side-header) {
+  display: none;
 }
 
 .browser-app-shortcut {

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&display=swap" />
   <script src="theme.js?v=3"></script>
   <link rel="stylesheet" href="style.css?v=3" />
-  <link rel="stylesheet" href="browser.css?v=11" />
+  <link rel="stylesheet" href="browser.css?v=13" />
   <title>TVZA Browser</title>
 </head>
 <body class="browser-body">
@@ -115,8 +115,11 @@
             </span>
           </button>
         </section>
-        <section id="sideQuickStartSection">
-          <div class="browser-side-title">Schnellstart</div>
+        <section id="sideQuickStartSection" data-collapsible-section="quick">
+          <button class="browser-side-header" type="button" data-toggle-section="quick" aria-expanded="true">
+            <span class="browser-side-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+            <span class="browser-side-title">Schnellstart</span>
+          </button>
           <div class="browser-speed-list" id="quickLinksList"></div>
         </section>
 
@@ -125,13 +128,19 @@
           <div class="browser-mini-list" id="favoritesList"></div>
         </section>
 
-        <section id="sideRecentsSection">
-          <div class="browser-side-title">Recents</div>
+        <section id="sideRecentsSection" data-collapsible-section="recents">
+          <button class="browser-side-header" type="button" data-toggle-section="recents" aria-expanded="false">
+            <span class="browser-side-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+            <span class="browser-side-title">Recents</span>
+          </button>
           <div class="browser-mini-list" id="recentsList"></div>
         </section>
 
-        <section id="sideProjectsSection">
-          <div class="browser-side-title">Tabgruppen</div>
+        <section id="sideProjectsSection" data-collapsible-section="projects">
+          <button class="browser-side-header" type="button" data-toggle-section="projects" aria-expanded="true">
+            <span class="browser-side-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+            <span class="browser-side-title">Tabgruppen</span>
+          </button>
           <button class="browser-project-add" id="newProjectBtn" type="button">+ Neue Tabgruppe</button>
           <div class="browser-mini-list" id="historyList"></div>
         </section>
@@ -228,6 +237,6 @@
     <div class="browser-status" id="browserStatus">Bereit</div>
   </div>
 
-  <script src="browser.js?v=11"></script>
+  <script src="browser.js?v=13"></script>
 </body>
 </html>

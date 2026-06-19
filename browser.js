@@ -9,6 +9,8 @@
   const HISTORY_KEY = 'tvza.browser.history';
   const PROJECTS_KEY = 'tvza.browser.projects';
   const PROJECT_COLLAPSED_KEY = 'tvza.browser.collapsedProjects';
+  const TAB_GROUP_COLLAPSED_KEY = 'tvza.browser.collapsedTabGroups';
+  const SIDEBAR_SECTIONS_KEY = 'tvza.browser.collapsedSidebarSections';
   const QUICK_LINKS_KEY = 'tvza.browser.quickLinks';
   const SETTINGS_KEY = 'tvza.browser.settings';
   const LAYOUT_KEY = 'tvza.browser.layout';
@@ -69,6 +71,8 @@
   let quickLinks = readQuickLinks();
   let projects = readJson(PROJECTS_KEY, null);
   let collapsedProjects = readJson(PROJECT_COLLAPSED_KEY, {});
+  let collapsedTabGroups = readJson(TAB_GROUP_COLLAPSED_KEY, {});
+  let collapsedSidebarSections = readJson(SIDEBAR_SECTIONS_KEY, null);
   let settings = readSettings();
   let layout = readLayout();
   let tvzaLoggedIn = false;
@@ -80,6 +84,7 @@
   }
   if (!tabs.some(tab => tab.id === activeTabId)) activeTabId = tabs[0].id;
   projects = normalizeProjects(projects);
+  collapsedSidebarSections = normalizeSidebarSections(collapsedSidebarSections);
   tabs.forEach(tab => {
     tab.projectId = projects?.[tab.projectId]?.custom ? tab.projectId : null;
   });
@@ -176,6 +181,8 @@
     localStorage.setItem(HISTORY_KEY, JSON.stringify(browserHistory.slice(0, 200)));
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
     localStorage.setItem(PROJECT_COLLAPSED_KEY, JSON.stringify(collapsedProjects));
+    localStorage.setItem(TAB_GROUP_COLLAPSED_KEY, JSON.stringify(collapsedTabGroups));
+    localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(collapsedSidebarSections));
   }
 
   function normalizeInput(raw) {
@@ -285,6 +292,16 @@
     return normalized;
   }
 
+  function normalizeSidebarSections(saved) {
+    const defaults = { quick: false, recents: true, projects: false };
+    if (!saved || typeof saved !== 'object') return defaults;
+    return {
+      quick: Boolean(saved.quick),
+      recents: Boolean(saved.recents),
+      projects: Boolean(saved.projects)
+    };
+  }
+
   function ensureProject(id, name, url = '', target = projects) {
     if (!id || id === 'project:start' || !id.startsWith('custom:')) return null;
     if (!target[id]) target[id] = { id, name, custom: true, tabs: [], recents: [], color: groupColorFor(id), updatedAt: Date.now() };
@@ -361,21 +378,56 @@
     renderPage(tab);
     renderLists();
     updateButtons(tab);
+    applySidebarSections();
     applyLayout();
   }
 
   function renderTabs() {
+    const renderedCollapsedGroups = new Set();
     tabStrip.innerHTML = tabs.map(tab => {
       const project = projects[tab.projectId];
       const grouped = Boolean(project?.custom);
+      if (grouped && isTabGroupCollapsed(project.id)) {
+        if (renderedCollapsedGroups.has(project.id)) return '';
+        renderedCollapsedGroups.add(project.id);
+        return renderCollapsedTabGroup(project);
+      }
       return `
       <button class="browser-tab ${tab.id === activeTabId ? 'is-active' : ''} ${grouped ? 'is-grouped' : ''}" type="button" data-tab="${tab.id}" draggable="true" ${grouped ? `style="${projectStyle(project)}" title="${escapeAttr(project.name)}"` : ''}>
         ${grouped ? `<span class="browser-tab-group-dot" aria-hidden="true"></span><span class="browser-tab-group-chip">${escapeHtml(project.name)}</span>` : ''}
         <span class="browser-tab-title">${escapeHtml(tab.title)}</span>
+        ${grouped ? `<span class="browser-tab-collapse" data-collapse-tab-project="${escapeAttr(project.id)}" aria-label="Tabgruppe einklappen" title="Tabgruppe einklappen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></span>` : ''}
         <span class="browser-tab-close" data-close="${tab.id}" aria-label="Tab schliessen">x</span>
       </button>
     `;
     }).join('');
+  }
+
+  function renderCollapsedTabGroup(project) {
+    const groupTabs = tabs.filter(tab => tab.projectId === project.id);
+    const active = groupTabs.some(tab => tab.id === activeTabId);
+    const count = groupTabs.length;
+    return `
+      <button class="browser-tab browser-tab-group-summary ${active ? 'is-active' : ''}" type="button" data-expand-tab-project="${escapeAttr(project.id)}" style="${projectStyle(project)}" title="${escapeAttr(project.name)} aufklappen">
+        <span class="browser-tab-group-dot" aria-hidden="true"></span>
+        <span class="browser-tab-group-chip">${escapeHtml(project.name)}</span>
+        <span class="browser-tab-title">${count} ${count === 1 ? 'Tab' : 'Tabs'}</span>
+        <span class="browser-tab-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
+      </button>
+    `;
+  }
+
+  function isTabGroupCollapsed(projectId) {
+    return Boolean(collapsedTabGroups?.[projectId]);
+  }
+
+  function setTabGroupCollapsed(projectId, collapsed) {
+    if (!projects[projectId]?.custom) return;
+    collapsedTabGroups = { ...(collapsedTabGroups || {}) };
+    if (collapsed) collapsedTabGroups[projectId] = true;
+    else delete collapsedTabGroups[projectId];
+    saveState();
+    render();
   }
 
   function renderPage(tab) {
@@ -455,6 +507,29 @@
     if (!collapsedProjects[projectId]) delete collapsedProjects[projectId];
     saveState();
     renderLists();
+  }
+
+  function isSidebarSectionCollapsed(sectionKey) {
+    return Boolean(collapsedSidebarSections?.[sectionKey]);
+  }
+
+  function toggleSidebarSection(sectionKey) {
+    if (!['quick', 'recents', 'projects'].includes(sectionKey)) return;
+    collapsedSidebarSections = {
+      ...normalizeSidebarSections(collapsedSidebarSections),
+      [sectionKey]: !isSidebarSectionCollapsed(sectionKey)
+    };
+    saveState();
+    applySidebarSections();
+  }
+
+  function applySidebarSections() {
+    document.querySelectorAll('[data-collapsible-section]').forEach(section => {
+      const key = section.dataset.collapsibleSection;
+      const collapsed = isSidebarSectionCollapsed(key);
+      section.classList.toggle('is-collapsed', collapsed);
+      section.querySelector('[data-toggle-section]')?.setAttribute('aria-expanded', String(!collapsed));
+    });
   }
 
   function projectTabItems(project) {
@@ -571,18 +646,22 @@
   function deleteProject(projectId) {
     const project = projects[projectId];
     if (!project?.custom) return;
-    const ok = window.confirm(`Tabgruppe "${project.name}" löschen? Offene Tabs bleiben offen, werden aber aus der Gruppe gelöst.`);
+    const ok = window.confirm(`Tabgruppe "${project.name}" löschen? Alle Tabs in dieser Gruppe werden geschlossen.`);
     if (!ok) return;
-    tabs.forEach(tab => {
-      if (tab.projectId === projectId) tab.projectId = null;
-    });
+    const activeWasDeleted = tabs.some(tab => tab.id === activeTabId && tab.projectId === projectId);
+    tabs = tabs.filter(tab => tab.projectId !== projectId);
+    if (!tabs.length) tabs = [makeTab()];
+    if (activeWasDeleted || !tabs.some(tab => tab.id === activeTabId)) activeTabId = tabs[Math.max(0, tabs.length - 1)].id;
     delete projects[projectId];
     if (collapsedProjects?.[projectId]) {
       delete collapsedProjects[projectId];
     }
+    if (collapsedTabGroups?.[projectId]) {
+      delete collapsedTabGroups[projectId];
+    }
     saveState();
     render();
-    setStatus('Tabgruppe gelöscht.');
+    setStatus('Tabgruppe und Tabs gelöscht.');
   }
 
   function cleanProjectName(value, fallback = 'Tabgruppe') {
@@ -916,6 +995,16 @@
   });
 
   tabStrip.addEventListener('click', event => {
+    const collapseGroup = event.target.closest('[data-collapse-tab-project]');
+    if (collapseGroup) {
+      setTabGroupCollapsed(collapseGroup.dataset.collapseTabProject, true);
+      return;
+    }
+    const expandGroup = event.target.closest('[data-expand-tab-project]');
+    if (expandGroup) {
+      setTabGroupCollapsed(expandGroup.dataset.expandTabProject, false);
+      return;
+    }
     const close = event.target.closest('[data-close]');
     if (close) {
       closeTab(close.dataset.close);
@@ -930,7 +1019,7 @@
 
   tabStrip.addEventListener('dragstart', event => {
     const tabButton = event.target.closest('[data-tab]');
-    if (!tabButton || event.target.closest('[data-close]')) return;
+    if (!tabButton || event.target.closest('[data-close], [data-collapse-tab-project]')) return;
     draggedTabId = tabButton.dataset.tab;
     tabButton.classList.add('is-dragging');
     event.dataTransfer.effectAllowed = 'move';
@@ -969,6 +1058,11 @@
   });
 
   document.addEventListener('click', event => {
+    const sectionToggle = event.target.closest('[data-toggle-section]');
+    if (sectionToggle) {
+      toggleSidebarSection(sectionToggle.dataset.toggleSection);
+      return;
+    }
     const projectToggle = event.target.closest('[data-toggle-project]');
     if (projectToggle) {
       toggleProjectCollapsed(projectToggle.dataset.toggleProject);
