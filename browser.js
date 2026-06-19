@@ -69,6 +69,7 @@
   let settings = readSettings();
   let layout = readLayout();
   let tvzaLoggedIn = false;
+  let draggedTabId = null;
 
   if (!Array.isArray(tabs) || !tabs.length) {
     tabs = [makeTab()];
@@ -359,7 +360,8 @@
 
   function renderTabs() {
     tabStrip.innerHTML = tabs.map(tab => `
-      <button class="browser-tab ${tab.id === activeTabId ? 'is-active' : ''}" type="button" data-tab="${tab.id}">
+      <button class="browser-tab ${tab.id === activeTabId ? 'is-active' : ''}" type="button" data-tab="${tab.id}" draggable="true">
+        ${tab.projectId && projects[tab.projectId]?.custom ? '<span class="browser-tab-group-dot" aria-hidden="true"></span>' : ''}
         <span class="browser-tab-title">${escapeHtml(tab.title)}</span>
         <span class="browser-tab-close" data-close="${tab.id}" aria-label="Tab schliessen">×</span>
       </button>
@@ -473,10 +475,75 @@
   function createProject() {
     const count = Object.values(projects).filter(project => project.custom).length + 1;
     const name = `Tabgruppe ${count}`;
-    const id = `custom:${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || uid()}`;
+    const id = makeGroupId(name);
     projects[id] = projects[id] || { id, name, custom: true, tabs: [], recents: [], updatedAt: Date.now() };
     newTab(START_URL, id);
     setStatus(`${name} wurde erstellt.`);
+  }
+
+  function makeGroupId(name) {
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'tabgruppe';
+    let id = `custom:${base}`;
+    let index = 2;
+    while (projects[id]) {
+      id = `custom:${base}-${index}`;
+      index += 1;
+    }
+    return id;
+  }
+
+  function tabGroupName() {
+    const count = Object.values(projects).filter(project => project.custom).length + 1;
+    return `Tabgruppe ${count}`;
+  }
+
+  function clearTabDropClasses() {
+    tabStrip.querySelectorAll('.browser-tab').forEach(tab => {
+      tab.classList.remove('is-dragging', 'is-drop-left', 'is-drop-right', 'is-drop-group');
+    });
+  }
+
+  function tabDropIntent(event, tabButton) {
+    const rect = tabButton.getBoundingClientRect();
+    const ratio = (event.clientX - rect.left) / Math.max(1, rect.width);
+    if (ratio < 0.28) return 'left';
+    if (ratio > 0.72) return 'right';
+    return 'group';
+  }
+
+  function moveTab(dragId, targetId, intent) {
+    if (dragId === targetId) return;
+    const from = tabs.findIndex(tab => tab.id === dragId);
+    if (from < 0) return;
+    const [dragged] = tabs.splice(from, 1);
+    let targetIndex = tabs.findIndex(tab => tab.id === targetId);
+    if (targetIndex < 0) {
+      tabs.splice(from, 0, dragged);
+      return;
+    }
+    if (intent === 'right') targetIndex += 1;
+    tabs.splice(targetIndex, 0, dragged);
+    saveState();
+    render();
+  }
+
+  function groupTabs(dragId, targetId) {
+    if (dragId === targetId) return;
+    const dragged = tabs.find(tab => tab.id === dragId);
+    const target = tabs.find(tab => tab.id === targetId);
+    if (!dragged || !target) return;
+    const groupId = target.projectId && projects[target.projectId]?.custom
+      ? target.projectId
+      : makeGroupId(tabGroupName());
+    projects[groupId] = projects[groupId] || { id: groupId, name: tabGroupName(), custom: true, tabs: [], recents: [], updatedAt: Date.now() };
+    dragged.projectId = groupId;
+    target.projectId = groupId;
+    projects[groupId].updatedAt = Date.now();
+    updateProjectFromTab(target);
+    updateProjectFromTab(dragged);
+    saveState();
+    render();
+    setStatus(`${projects[groupId].name} aktualisiert.`);
   }
 
   function openProject(projectId) {
@@ -728,6 +795,46 @@
     activeTabId = tabButton.dataset.tab;
     saveState();
     render();
+  });
+
+  tabStrip.addEventListener('dragstart', event => {
+    const tabButton = event.target.closest('[data-tab]');
+    if (!tabButton || event.target.closest('[data-close]')) return;
+    draggedTabId = tabButton.dataset.tab;
+    tabButton.classList.add('is-dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggedTabId);
+  });
+
+  tabStrip.addEventListener('dragover', event => {
+    const tabButton = event.target.closest('[data-tab]');
+    if (!tabButton || !draggedTabId || tabButton.dataset.tab === draggedTabId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    clearTabDropClasses();
+    const intent = tabDropIntent(event, tabButton);
+    tabButton.classList.add(intent === 'group' ? 'is-drop-group' : `is-drop-${intent}`);
+  });
+
+  tabStrip.addEventListener('dragleave', event => {
+    if (!event.relatedTarget || !tabStrip.contains(event.relatedTarget)) clearTabDropClasses();
+  });
+
+  tabStrip.addEventListener('drop', event => {
+    const tabButton = event.target.closest('[data-tab]');
+    if (!tabButton || !draggedTabId) return;
+    event.preventDefault();
+    const targetId = tabButton.dataset.tab;
+    const intent = tabDropIntent(event, tabButton);
+    clearTabDropClasses();
+    if (intent === 'group') groupTabs(draggedTabId, targetId);
+    else moveTab(draggedTabId, targetId, intent);
+    draggedTabId = null;
+  });
+
+  tabStrip.addEventListener('dragend', () => {
+    draggedTabId = null;
+    clearTabDropClasses();
   });
 
   document.addEventListener('click', event => {
