@@ -208,11 +208,13 @@
 }
 
 .browser-new-tab {
+  width: 34px;
   min-width: 34px;
+  height: 34px;
   min-height: 34px;
+  padding: 0;
+  flex: 0 0 34px;
   margin-bottom: 0;
-  font-size: 22px;
-  line-height: 1;
 }
 
 .browser-icon-btn:hover,
@@ -225,6 +227,7 @@
   background: var(--surface-2);
 }
 
+.browser-new-tab svg,
 .browser-icon-btn svg,
 .browser-address svg,
 .browser-hero-search svg {
@@ -570,6 +573,14 @@
   margin-top: 8px;
 }
 
+.browser-project-head {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 6px;
+  align-items: stretch;
+}
+
 .browser-project-title {
   height: 46px;
   padding: 7px 10px;
@@ -582,6 +593,35 @@
   cursor: pointer;
   font: inherit;
   text-align: left;
+}
+
+.browser-project-rename {
+  width: 38px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.browser-project-rename:hover {
+  border-color: var(--ink-soft);
+  background: var(--surface-2);
+}
+
+.browser-project-rename svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .browser-project-title span,

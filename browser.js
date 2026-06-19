@@ -409,10 +409,15 @@
   function renderProjectGroups() {
     return orderedProjects().map(project => `
       <div class="browser-project-group">
-        <button class="browser-project-title" type="button" data-open-project="${escapeAttr(project.id)}">
-          <span>${escapeHtml(project.name)}</span>
-          <small>${project.tabs.length} Tabs</small>
-        </button>
+        <div class="browser-project-head">
+          <button class="browser-project-title" type="button" data-open-project="${escapeAttr(project.id)}">
+            <span>${escapeHtml(project.name)}</span>
+            <small>${project.tabs.length} Tabs</small>
+          </button>
+          <button class="browser-project-rename" type="button" data-rename-project="${escapeAttr(project.id)}" aria-label="Tabgruppe ${escapeAttr(project.name)} umbenennen" title="Tabgruppe umbenennen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+          </button>
+        </div>
         ${project.tabs.slice(0, 4).map(itemButton).join('')}
       </div>
     `).join('');
@@ -473,12 +478,29 @@
   }
 
   function createProject() {
-    const count = Object.values(projects).filter(project => project.custom).length + 1;
-    const name = `Tabgruppe ${count}`;
+    const fallback = tabGroupName();
+    const name = cleanProjectName(window.prompt('Name der Tabgruppe', fallback), '');
+    if (!name) return;
     const id = makeGroupId(name);
     projects[id] = projects[id] || { id, name, custom: true, tabs: [], recents: [], updatedAt: Date.now() };
     newTab(START_URL, id);
     setStatus(`${name} wurde erstellt.`);
+  }
+
+  function renameProject(projectId) {
+    const project = projects[projectId];
+    if (!project?.custom) return;
+    const name = cleanProjectName(window.prompt('Name der Tabgruppe', project.name), '');
+    if (!name) return;
+    project.name = name;
+    project.updatedAt = Date.now();
+    saveState();
+    renderLists();
+    setStatus(`Tabgruppe heisst jetzt ${name}.`);
+  }
+
+  function cleanProjectName(value, fallback = 'Tabgruppe') {
+    return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 42) || fallback;
   }
 
   function makeGroupId(name) {
@@ -838,6 +860,11 @@
   });
 
   document.addEventListener('click', event => {
+    const projectRename = event.target.closest('[data-rename-project]');
+    if (projectRename) {
+      renameProject(projectRename.dataset.renameProject);
+      return;
+    }
     const projectOpen = event.target.closest('[data-open-project]');
     if (projectOpen) {
       openProject(projectOpen.dataset.openProject);

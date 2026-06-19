@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&display=swap" />
   <script src="theme.js?v=3"></script>
   <link rel="stylesheet" href="style.css?v=3" />
-  <link rel="stylesheet" href="browser.css?v=7" />
+  <link rel="stylesheet" href="browser.css?v=8" />
   <title>TVZA Browser</title>
 </head>
 <body class="browser-body">
@@ -42,7 +42,9 @@
 
     <section class="browser-tabs-row" aria-label="Tabs">
       <div class="browser-tabs" id="tabStrip"></div>
-      <button class="browser-new-tab" id="newTabBtn" type="button" title="Neuer Tab" aria-label="Neuer Tab">+</button>
+      <button class="browser-new-tab" id="newTabBtn" type="button" title="Neuer Tab" aria-label="Neuer Tab">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      </button>
     </section>
 
     <section class="browser-toolbar" aria-label="Browser Navigation">
@@ -226,6 +228,6 @@
     <div class="browser-status" id="browserStatus">Bereit</div>
   </div>
 
-  <script src="browser.js?v=7"></script>
+  <script src="browser.js?v=8"></script>
 </body>
 </html>
