@@ -1,5 +1,7 @@
 (() => {
   const SETTINGS_KEY = 'tvza.browser.settings';
+  const QUICK_LINKS_KEY = 'tvza.browser.quickLinks';
+  const HISTORY_KEY = 'tvza.browser.history';
   const ASSISTANTS = {
     claude: 'https://claude.ai/new',
     chatgpt: 'https://chatgpt.com/',
@@ -13,6 +15,12 @@
     homeMode: 'start',
     homeUrl: ''
   };
+  const DEFAULT_QUICK_LINKS = [
+    { title: 'Wikipedia', url: 'https://www.wikipedia.org' },
+    { title: 'MDN', url: 'https://developer.mozilla.org' },
+    { title: 'YouTube', url: 'https://www.youtube.com' },
+    { title: 'Google', url: 'https://www.google.com' }
+  ];
 
   const $ = selector => document.querySelector(selector);
   let authApi = null;
@@ -34,6 +42,21 @@
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 
+  function readJson(key, fallback) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback;
+    } catch (error) {
+      localStorage.removeItem(key);
+      return fallback;
+    }
+  }
+
+  function readQuickLinks() {
+    const saved = readJson(QUICK_LINKS_KEY, null);
+    const source = Array.isArray(saved) && saved.length ? saved : DEFAULT_QUICK_LINKS;
+    return [...source, ...Array(Math.max(0, 8 - source.length)).fill({ title: '', url: '' })].slice(0, 8);
+  }
+
   function load() {
     const settings = readSettings();
     $('#searchEngine').value = settings.searchEngine;
@@ -41,6 +64,8 @@
     $('#assistantUrl').value = settings.assistantUrl;
     $('#homeMode').value = settings.homeMode;
     $('#homeUrl').value = settings.homeUrl;
+    renderQuickLinks();
+    renderHistory();
   }
 
   function escHtml(str) {
@@ -139,7 +164,53 @@
     $('#settingsStatus').textContent = 'Gespeichert. Der Browser nutzt die neuen Einstellungen sofort.';
   }
 
+  function renderQuickLinks() {
+    const links = readQuickLinks();
+    $('#quickLinkEditor').innerHTML = links.map((link, index) => `
+      <div class="browser-shortcut-row">
+        <span>${index + 1}</span>
+        <input data-quick-title="${index}" type="text" value="${escHtml(link.title || '')}" placeholder="Name" />
+        <input data-quick-url="${index}" type="url" value="${escHtml(link.url || '')}" placeholder="https://..." />
+      </div>
+    `).join('');
+  }
+
+  function saveQuickLinks() {
+    const links = [];
+    for (let index = 0; index < 8; index += 1) {
+      const title = document.querySelector(`[data-quick-title="${index}"]`)?.value.trim();
+      let url = document.querySelector(`[data-quick-url="${index}"]`)?.value.trim();
+      if (!title || !url) continue;
+      if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+      links.push({ title, url });
+    }
+    localStorage.setItem(QUICK_LINKS_KEY, JSON.stringify(links));
+    $('#quickLinksStatus').textContent = 'Shortcuts gespeichert.';
+  }
+
+  function renderHistory() {
+    const history = readJson(HISTORY_KEY, []);
+    $('#historySettingsList').innerHTML = history.length
+      ? history.map(item => `
+        <button type="button" class="browser-history-row" data-history-url="${escHtml(item.url)}">
+          <strong>${escHtml(item.title || item.url)}</strong>
+          <small>${escHtml(item.url)}</small>
+        </button>
+      `).join('')
+      : '<p class="browser-empty">Noch kein Verlauf.</p>';
+  }
+
   $('#saveSettings').addEventListener('click', save);
+  $('#saveQuickLinks').addEventListener('click', saveQuickLinks);
+  $('#resetQuickLinks').addEventListener('click', () => {
+    localStorage.setItem(QUICK_LINKS_KEY, JSON.stringify(DEFAULT_QUICK_LINKS));
+    renderQuickLinks();
+    $('#quickLinksStatus').textContent = 'Standard-Shortcuts wiederhergestellt.';
+  });
+  $('#clearHistory').addEventListener('click', () => {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify([]));
+    renderHistory();
+  });
   $('#profileSave').addEventListener('click', saveProfile);
   $('#profileSignOut').addEventListener('click', async () => {
     if (!authApi) return;

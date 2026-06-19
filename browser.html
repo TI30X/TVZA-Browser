@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&display=swap" />
   <script src="theme.js?v=3"></script>
   <link rel="stylesheet" href="style.css?v=3" />
-  <link rel="stylesheet" href="browser.css?v=5" />
+  <link rel="stylesheet" href="browser.css?v=6" />
   <title>TVZA Browser</title>
 </head>
 <body class="browser-body">
@@ -22,7 +22,7 @@
         <span class="brand-divider"></span>
         <span>
           <strong>TVZA Browser</strong>
-          <small>Tabs, Favoriten, Verlauf</small>
+          <small>Browser Project</small>
         </span>
       </a>
 
@@ -91,7 +91,7 @@
         <button type="button" id="railFavoritesBtn" title="Favoriten" aria-label="Favoriten">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3z"/></svg>
         </button>
-        <button type="button" id="railProjectsBtn" title="Projekte" aria-label="Projekte">
+        <button type="button" id="railProjectsBtn" title="Tabgruppen" aria-label="Tabgruppen">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         </button>
       </div>
@@ -113,12 +113,7 @@
         </section>
         <section id="sideQuickStartSection">
           <div class="browser-side-title">Schnellstart</div>
-          <div class="browser-speed-list">
-            <button type="button" data-url="https://www.wikipedia.org">Wikipedia</button>
-            <button type="button" data-url="https://developer.mozilla.org">MDN</button>
-            <button type="button" data-url="https://www.youtube.com">YouTube</button>
-            <button type="button" data-url="https://www.google.com">Google</button>
-          </div>
+          <div class="browser-speed-list" id="quickLinksList"></div>
         </section>
 
         <section id="sideFavoritesSection">
@@ -132,25 +127,28 @@
         </section>
 
         <section id="sideProjectsSection">
-          <div class="browser-side-title">Projekte</div>
-          <button class="browser-project-add" id="newProjectBtn" type="button">+ Neues Projekt</button>
+          <div class="browser-side-title">Tabgruppen</div>
+          <button class="browser-project-add" id="newProjectBtn" type="button">+ Neue Tabgruppe</button>
           <div class="browser-mini-list" id="historyList"></div>
         </section>
       </aside>
       <div class="browser-resizer browser-resizer--left" id="leftResizer" title="Seitenleiste breiter oder schmaler ziehen"></div>
 
       <aside class="browser-side-app" id="tvzaSideApp" aria-label="TVZA Family App" hidden>
+        <div class="browser-resizer browser-resizer--tvza" id="tvzaSideResizer" title="TVZA App breiter oder schmaler ziehen"></div>
         <div class="browser-side-app-head">
           <div>
             <p class="browser-kicker">Sidebar App</p>
             <h2>TVZA Family</h2>
             <p id="tvzaUserLine">Mit deinem TVZA Konto verbunden.</p>
           </div>
-          <button class="browser-icon-btn" id="tvzaSideCloseBtn" type="button" aria-label="TVZA App schliessen">×</button>
+          <div class="browser-side-app-head-actions">
+            <button type="button" id="tvzaSideFullBtn">Im Tab</button>
+            <button class="browser-icon-btn" id="tvzaSideCloseBtn" type="button" aria-label="TVZA App schliessen">×</button>
+          </div>
         </div>
-        <div class="browser-side-app-actions">
+        <div class="browser-side-app-actions" id="tvzaSideAuthActions">
           <button type="button" id="tvzaSideLoginBtn">Einloggen</button>
-          <button type="button" id="tvzaSideFullBtn">Im Tab öffnen</button>
         </div>
         <div class="browser-side-app-login" id="tvzaSideSignedOut">
           <strong>Einloggen, um TVZA hier zu nutzen.</strong>
@@ -166,7 +164,7 @@
               <div>
                 <p class="browser-kicker">TVZA app top · online website</p>
                 <h1>TVZA Browser</h1>
-                <p class="browser-home-copy">Ein Windows-App-ready Browser für die TVZA Familie, Projekte von TvZ und direkten AI-Support.</p>
+                <p class="browser-home-copy">Ein Windows-App-ready Browser Project für die TVZA Familie, Tabgruppen und direkten AI-Support.</p>
               </div>
               <div class="browser-home-actions">
                 <button type="button" data-url="https://ti30x.github.io/tvza-app/public.html">Online Website</button>
@@ -183,20 +181,11 @@
               </form>
             </section>
 
-            <section class="browser-signed-out" id="tvzaSignedOutPanel">
-              <div>
-                <p class="browser-kicker">TVZA Family App</p>
-                <h2>TVZA ist links als Sidebar-App angeheftet.</h2>
-                <p id="tvzaHomeHint">Öffne die TVZA Family App über die linke Seitenleiste. Nach dem Login erscheint sie dort direkt im Browser.</p>
-              </div>
-              <button type="button" id="tvzaHomeOpenBtn">TVZA öffnen</button>
-            </section>
-
             <section class="browser-projects-panel">
               <div class="browser-panel-head">
                 <div>
-                  <p class="browser-kicker">Projects made by TvZ</p>
-                  <h2>Webbrowser mit direkter Integration</h2>
+                  <p class="browser-kicker">TVZA Browser</p>
+                  <h2>Browser Project</h2>
                 </div>
                 <button type="button" id="assistantHomeBtn">Assistant öffnen</button>
               </div>
@@ -235,6 +224,6 @@
     <div class="browser-status" id="browserStatus">Bereit</div>
   </div>
 
-  <script src="browser.js?v=5"></script>
+  <script src="browser.js?v=6"></script>
 </body>
 </html>

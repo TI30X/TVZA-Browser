@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&display=swap" />
   <script src="theme.js?v=3"></script>
   <link rel="stylesheet" href="style.css?v=3" />
-  <link rel="stylesheet" href="browser.css?v=5" />
+  <link rel="stylesheet" href="browser.css?v=6" />
   <title>TVZA Browser Einstellungen</title>
 </head>
 <body>
@@ -117,10 +117,38 @@
         </div>
 
         <p class="browser-settings-note" id="settingsStatus">Bereit.</p>
+
+        <section class="browser-profile-panel">
+          <div class="browser-panel-head">
+            <div>
+              <p class="browser-kicker">Schnellstart</p>
+              <h2>Shortcuts anpassen</h2>
+              <p>Diese Links erscheinen links in der Seitenleiste.</p>
+            </div>
+          </div>
+          <div class="browser-settings-grid browser-shortcut-editor" id="quickLinkEditor"></div>
+          <div class="browser-settings-actions">
+            <button class="btn btn-secondary" id="resetQuickLinks" type="button">Standard</button>
+            <button class="btn btn-primary" id="saveQuickLinks" type="button">Shortcuts speichern</button>
+          </div>
+          <p class="browser-settings-note" id="quickLinksStatus">Bis zu acht Schnellstarts.</p>
+        </section>
+
+        <section class="browser-profile-panel">
+          <div class="browser-panel-head">
+            <div>
+              <p class="browser-kicker">Verlauf</p>
+              <h2>Alle Recents</h2>
+              <p>Die Seitenleiste zeigt nur die letzten 20. Der Rest bleibt hier.</p>
+            </div>
+            <button class="browser-open-btn" id="clearHistory" type="button">Verlauf leeren</button>
+          </div>
+          <div class="browser-history-settings-list" id="historySettingsList"></div>
+        </section>
       </section>
     </main>
   </div>
 
-  <script src="browser-settings.js?v=3"></script>
+  <script src="browser-settings.js?v=4"></script>
 </body>
 </html>

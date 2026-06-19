@@ -6,6 +6,7 @@
   --browser-unit: 8px;
   --browser-sidebar-width: 260px;
   --assistant-width: 430px;
+  --tvza-app-width: 520px;
 }
 
 .browser-shell {
@@ -577,11 +578,10 @@
   top: 0;
   bottom: 0;
   z-index: 30;
-  width: min(420px, calc(100% - var(--browser-sidebar-width) - 6px));
-  padding: 14px;
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  gap: 10px;
+  width: min(var(--tvza-app-width), calc(100% - var(--browser-sidebar-width) - 6px));
+  padding: 0;
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--border);
   background: var(--surface);
   box-shadow: 10px 0 28px oklch(0 0 0 / 0.16);
@@ -589,7 +589,7 @@
 
 .browser-workspace.is-sidebar-closed .browser-side-app {
   left: 40px;
-  width: min(420px, calc(100% - 40px));
+  width: min(var(--tvza-app-width), calc(100% - 40px));
 }
 
 .browser-side-app[hidden] {
@@ -597,10 +597,14 @@
 }
 
 .browser-side-app-head {
+  min-height: 74px;
+  padding: 12px 14px;
   display: flex;
   align-items: start;
   justify-content: space-between;
   gap: 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--surface), transparent 4%);
 }
 
 .browser-side-app-head h2 {
@@ -612,10 +616,30 @@
   font-size: 13px;
 }
 
-.browser-side-app-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.browser-side-app-head-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.browser-side-app-head-actions > button:not(.browser-icon-btn) {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.browser-side-app-actions {
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
 }
 
 .browser-side-app-actions button {
@@ -637,10 +661,16 @@
 }
 
 .browser-side-app-login {
+  margin: 12px 14px;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-2);
+}
+
+.browser-side-app-actions[hidden],
+.browser-side-app-login[hidden] {
+  display: none;
 }
 
 .browser-side-app-login strong,
@@ -655,12 +685,26 @@
 }
 
 .browser-side-app-frame {
+  flex: 1 1 auto;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-height: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 0;
+  border-radius: 0;
   background: white;
+}
+
+.browser-resizer--tvza {
+  position: absolute;
+  top: 0;
+  right: -6px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+.browser-resizer--tvza::after {
+  left: 2px;
 }
 
 .browser-stage iframe {
@@ -1022,6 +1066,64 @@
   height: 18px;
 }
 
+.browser-shortcut-editor {
+  margin-top: 14px;
+}
+
+.browser-shortcut-row {
+  display: grid;
+  grid-template-columns: 32px minmax(120px, 0.7fr) minmax(180px, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.browser-shortcut-row span {
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-align: center;
+}
+
+.browser-shortcut-row input {
+  min-height: 40px;
+  width: 100%;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+}
+
+.browser-history-settings-list {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.browser-history-row {
+  min-height: 46px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.browser-history-row strong,
+.browser-history-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-history-row small {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
 .browser-settings-grid {
   display: grid;
   gap: 12px;
@@ -1085,7 +1187,7 @@
 
   .browser-side-app {
     left: 0;
-    width: min(420px, 100%);
+    width: min(var(--tvza-app-width), 100%);
   }
 
   .browser-toolbar {
@@ -1137,5 +1239,13 @@
 
   .browser-setting-row {
     grid-template-columns: 1fr;
+  }
+
+  .browser-shortcut-row {
+    grid-template-columns: 28px 1fr;
+  }
+
+  .browser-shortcut-row input[data-quick-url] {
+    grid-column: 2;
   }
 }

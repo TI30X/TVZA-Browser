@@ -8,6 +8,7 @@
   const FAVORITES_KEY = 'tvza.browser.favorites';
   const HISTORY_KEY = 'tvza.browser.history';
   const PROJECTS_KEY = 'tvza.browser.projects';
+  const QUICK_LINKS_KEY = 'tvza.browser.quickLinks';
   const SETTINGS_KEY = 'tvza.browser.settings';
   const LAYOUT_KEY = 'tvza.browser.layout';
   const SEARCH_ENGINES = {
@@ -28,6 +29,12 @@
     homeMode: 'start',
     homeUrl: ''
   };
+  const DEFAULT_QUICK_LINKS = [
+    { title: 'Wikipedia', url: 'https://www.wikipedia.org' },
+    { title: 'MDN', url: 'https://developer.mozilla.org' },
+    { title: 'YouTube', url: 'https://www.youtube.com' },
+    { title: 'Google', url: 'https://www.google.com' }
+  ];
 
   const $ = selector => document.querySelector(selector);
   const tabStrip = $('#tabStrip');
@@ -36,18 +43,18 @@
   const frame = $('#browserFrame');
   const startPanel = $('#startPanel');
   const status = $('#browserStatus');
+  const quickLinksList = $('#quickLinksList');
   const favoritesList = $('#favoritesList');
   const recentsList = $('#recentsList');
   const historyList = $('#historyList');
-  const tvzaSignedOutPanel = $('#tvzaSignedOutPanel');
   const tvzaFamilyFrame = $('#tvzaFamilyFrame');
   const tvzaUserLine = $('#tvzaUserLine');
   const tvzaSideApp = $('#tvzaSideApp');
   const tvzaSideSignedOut = $('#tvzaSideSignedOut');
+  const tvzaSideAuthActions = $('#tvzaSideAuthActions');
   const tvzaSideLoginBtn = $('#tvzaSideLoginBtn');
   const tvzaSideFullBtn = $('#tvzaSideFullBtn');
   const tvzaSidebarStatus = $('#tvzaSidebarStatus');
-  const tvzaHomeHint = $('#tvzaHomeHint');
   const assistantDrawer = $('#assistantDrawer');
   const assistantFrame = $('#assistantFrame');
   const browserWorkspace = $('#browserWorkspace');
@@ -57,6 +64,7 @@
   let activeTabId = localStorage.getItem(ACTIVE_KEY);
   let favorites = readJson(FAVORITES_KEY, []);
   let browserHistory = readJson(HISTORY_KEY, []);
+  let quickLinks = readQuickLinks();
   let projects = readJson(PROJECTS_KEY, null);
   let settings = readSettings();
   let layout = readLayout();
@@ -69,8 +77,7 @@
   if (!tabs.some(tab => tab.id === activeTabId)) activeTabId = tabs[0].id;
   projects = normalizeProjects(projects);
   tabs.forEach(tab => {
-    tab.projectId = tab.projectId || projectIdForUrl(tab.url);
-    ensureProject(tab.projectId, projectForUrl(tab.url), tab.url);
+    tab.projectId = projects?.[tab.projectId]?.custom ? tab.projectId : null;
   });
 
   function readJson(key, fallback) {
@@ -88,11 +95,21 @@
     return { ...DEFAULT_SETTINGS, ...(saved || {}) };
   }
 
+  function readQuickLinks() {
+    const saved = readJson(QUICK_LINKS_KEY, null);
+    const source = Array.isArray(saved) && saved.length ? saved : DEFAULT_QUICK_LINKS;
+    return source
+      .map(link => ({ title: String(link.title || '').trim(), url: String(link.url || '').trim() }))
+      .filter(link => link.title && link.url)
+      .slice(0, 8);
+  }
+
   function readLayout() {
     const saved = readJson(LAYOUT_KEY, {});
     return {
       sidebarWidth: clamp(Number(saved.sidebarWidth) || 260, 64, 460),
       assistantWidth: clamp(Number(saved.assistantWidth) || 430, 320, assistantMaxWidth()),
+      tvzaAppWidth: clamp(Number(saved.tvzaAppWidth) || 520, 360, tvzaAppMaxWidth()),
       sidebarMode: saved.sidebarMode === 'slim' ? 'closed' : (saved.sidebarMode || 'normal')
     };
   }
@@ -107,6 +124,10 @@
 
   function assistantMaxWidth() {
     return Math.max(360, Math.floor(window.innerWidth * 0.5));
+  }
+
+  function tvzaAppMaxWidth() {
+    return Math.max(420, Math.floor(window.innerWidth * 0.72));
   }
 
   function searchPrefix() {
@@ -130,12 +151,11 @@
   }
 
   function makeTab(url = START_URL) {
-    const projectId = projectIdForUrl(url);
     return {
       id: uid(),
       title: url === START_URL ? 'Start' : titleFromUrl(url),
       url,
-      projectId,
+      projectId: null,
       entries: [url],
       index: 0
     };
@@ -149,7 +169,7 @@
     localStorage.setItem(TAB_KEY, JSON.stringify(tabs));
     localStorage.setItem(ACTIVE_KEY, activeTabId);
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(browserHistory.slice(0, 80)));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(browserHistory.slice(0, 200)));
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
   }
 
@@ -198,11 +218,10 @@
 
   function addHistory(tab) {
     if (tab.url === START_URL) return;
-    tab.projectId = tab.projectId || projectIdForUrl(tab.url);
     browserHistory = [
-      { title: tab.title, url: tab.url, projectId: tab.projectId, project: projectNameForId(tab.projectId, tab.url), visitedAt: Date.now() },
+      { title: tab.title, url: tab.url, project: projectForUrl(tab.url), visitedAt: Date.now() },
       ...browserHistory.filter(item => item.url !== tab.url)
-    ].slice(0, 80);
+    ].slice(0, 200);
     updateProjectFromTab(tab);
   }
 
@@ -246,31 +265,23 @@
     const normalized = {};
     if (saved && typeof saved === 'object') {
       Object.entries(saved).forEach(([id, project]) => {
+        if (!project.custom && !id.startsWith('custom:')) return;
         normalized[id] = {
           id,
-          name: project.name || 'Projekt',
-          custom: !!project.custom,
+          name: project.name || 'Tabgruppe',
+          custom: true,
           tabs: Array.isArray(project.tabs) ? project.tabs : [],
-          recents: Array.isArray(project.recents) ? project.recents : [],
+          recents: [],
           updatedAt: Number(project.updatedAt) || Date.now()
         };
       });
     }
-    browserHistory.forEach(item => {
-      const id = item.projectId || projectIdForUrl(item.url);
-      const project = ensureProject(id, item.project || projectForUrl(item.url), item.url, normalized);
-      if (!project) return;
-      project.recents = [
-        { title: titleFromUrl(item.url), url: item.url, visitedAt: item.visitedAt || Date.now() },
-        ...project.recents.filter(recent => recent.url !== item.url)
-      ].slice(0, 8);
-    });
     return normalized;
   }
 
   function ensureProject(id, name, url = '', target = projects) {
-    if (!id || id === 'project:start') return null;
-    if (!target[id]) target[id] = { id, name, custom: id.startsWith('custom:'), tabs: [], recents: [], updatedAt: Date.now() };
+    if (!id || id === 'project:start' || !id.startsWith('custom:')) return null;
+    if (!target[id]) target[id] = { id, name, custom: true, tabs: [], recents: [], updatedAt: Date.now() };
     if (url && url !== START_URL && !target[id].tabs.some(tab => tab.url === url)) {
       target[id].tabs.push({ title: titleFromUrl(url), url, active: false });
     }
@@ -279,13 +290,10 @@
 
   function updateProjectFromTab(tab) {
     if (!tab || tab.url === START_URL) return;
+    if (!tab.projectId || !projects[tab.projectId]?.custom) return;
     const project = ensureProject(tab.projectId, projectNameForId(tab.projectId, tab.url), tab.url);
     if (!project) return;
     project.updatedAt = Date.now();
-    project.recents = [
-      { title: titleFromUrl(tab.url), url: tab.url, visitedAt: Date.now() },
-      ...project.recents.filter(item => item.url !== tab.url)
-    ].slice(0, 8);
 
     const projectTabs = tabs
       .filter(openTab => openTab.projectId === tab.projectId && openTab.url !== START_URL)
@@ -298,7 +306,7 @@
 
   function orderedProjects() {
     return Object.values(projects)
-      .filter(project => project.id !== 'project:start' && (project.tabs.length || project.recents.length || project.custom))
+      .filter(project => project.custom)
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
 
@@ -324,7 +332,7 @@
 
   function targetProjectIdForNavigation(tab, url) {
     if (tab?.projectId && projects[tab.projectId]?.custom) return tab.projectId;
-    return projectIdForUrl(url);
+    return null;
   }
 
   function go(delta) {
@@ -379,17 +387,21 @@
   }
 
   function renderLists() {
+    quickLinksList.innerHTML = quickLinks.length
+      ? quickLinks.map(link => `<button type="button" data-url="${escapeAttr(link.url)}">${escapeHtml(link.title)}</button>`).join('')
+      : '<p class="browser-empty">Keine Schnellstarts eingerichtet.</p>';
+
     favoritesList.innerHTML = favorites.length
       ? favorites.map(itemButton).join('')
       : '<p class="browser-empty">Noch keine Favoriten.</p>';
 
     recentsList.innerHTML = browserHistory.length
-      ? browserHistory.slice(0, 5).map(itemButton).join('')
+      ? browserHistory.slice(0, 20).map(itemButton).join('')
       : '<p class="browser-empty">Noch keine Recents.</p>';
 
     historyList.innerHTML = orderedProjects().length
       ? renderProjectGroups()
-      : '<p class="browser-empty">Noch kein Projektverlauf.</p>';
+      : '<p class="browser-empty">Noch keine Tabgruppen.</p>';
   }
 
   function renderProjectGroups() {
@@ -399,7 +411,7 @@
           <span>${escapeHtml(project.name)}</span>
           <small>${project.tabs.length} Tabs</small>
         </button>
-        ${project.recents.slice(0, 3).map(itemButton).join('')}
+        ${project.tabs.slice(0, 4).map(itemButton).join('')}
       </div>
     `).join('');
   }
@@ -460,7 +472,7 @@
 
   function createProject() {
     const count = Object.values(projects).filter(project => project.custom).length + 1;
-    const name = `Projekt ${count}`;
+    const name = `Tabgruppe ${count}`;
     const id = `custom:${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || uid()}`;
     projects[id] = projects[id] || { id, name, custom: true, tabs: [], recents: [], updatedAt: Date.now() };
     newTab(START_URL, id);
@@ -506,8 +518,10 @@
 
   function applyLayout() {
     layout.assistantWidth = clamp(layout.assistantWidth, 320, assistantMaxWidth());
+    layout.tvzaAppWidth = clamp(layout.tvzaAppWidth, 360, tvzaAppMaxWidth());
     document.documentElement.style.setProperty('--browser-sidebar-width', `${layout.sidebarWidth}px`);
     document.documentElement.style.setProperty('--assistant-width', `${layout.assistantWidth}px`);
+    document.documentElement.style.setProperty('--tvza-app-width', `${layout.tvzaAppWidth}px`);
     browserWorkspace.classList.toggle('is-sidebar-closed', layout.sidebarMode === 'closed');
   }
 
@@ -528,11 +542,14 @@
     const startX = event.clientX;
     const initialSidebar = layout.sidebarWidth;
     const initialAssistant = layout.assistantWidth;
+    const initialTvza = layout.tvzaAppWidth;
 
     function move(moveEvent) {
       if (kind === 'left') {
         layout.sidebarMode = 'normal';
         layout.sidebarWidth = clamp(initialSidebar + moveEvent.clientX - startX, 180, 460);
+      } else if (kind === 'tvza') {
+        layout.tvzaAppWidth = clamp(initialTvza + moveEvent.clientX - startX, 360, tvzaAppMaxWidth());
       } else {
         layout.assistantWidth = clamp(initialAssistant + startX - moveEvent.clientX, 320, assistantMaxWidth());
       }
@@ -586,6 +603,10 @@
   }
 
   function openTvzaApp() {
+    if (!tvzaSideApp.hidden) {
+      closeTvzaApp();
+      return;
+    }
     tvzaSideApp.hidden = false;
     if (tvzaLoggedIn) {
       tvzaFamilyFrame.src = TVZA_INDEX_URL;
@@ -610,14 +631,12 @@
       auth.onAuthStateChanged(async user => {
         tvzaLoggedIn = !!user;
         if (!user) {
-          tvzaSignedOutPanel.hidden = false;
           tvzaSideSignedOut.hidden = false;
+          tvzaSideAuthActions.hidden = false;
           tvzaSideLoginBtn.hidden = false;
-          tvzaSideFullBtn.textContent = 'Login im Tab';
           tvzaFamilyFrame.removeAttribute('src');
           tvzaUserLine.textContent = 'Melde dich an, um TVZA hier zu nutzen.';
           tvzaSidebarStatus.textContent = 'Einloggen benötigt';
-          tvzaHomeHint.textContent = 'Öffne TVZA links als Sidebar-App. Zum Entsperren nutzt du den normalen TVZA Login.';
           loginPromptBtn.textContent = 'Einloggen';
           loginPromptBtn.dataset.url = TVZA_LOGIN_URL;
           return;
@@ -627,18 +646,16 @@
         const name = profile.displayName || user.displayName || user.email || 'TVZA';
         tvzaUserLine.textContent = `${name} ist angemeldet.`;
         if (!tvzaSideApp.hidden) tvzaFamilyFrame.src = TVZA_INDEX_URL;
-        tvzaSignedOutPanel.hidden = true;
         tvzaSideSignedOut.hidden = true;
+        tvzaSideAuthActions.hidden = true;
         tvzaSideLoginBtn.hidden = true;
-        tvzaSideFullBtn.textContent = 'Im Tab öffnen';
         tvzaSidebarStatus.textContent = name.length > 22 ? `${name.slice(0, 20)}…` : name;
-        tvzaHomeHint.textContent = 'TVZA Family ist bereit und links als Sidebar-App angeheftet.';
         loginPromptBtn.textContent = name.length > 18 ? `${name.slice(0, 16)}…` : name;
         loginPromptBtn.dataset.url = 'browser-settings.html';
       });
     } catch (error) {
-      tvzaSignedOutPanel.hidden = false;
       tvzaSideSignedOut.hidden = false;
+      tvzaSideAuthActions.hidden = false;
       tvzaSidebarStatus.textContent = 'Firebase prüfen';
     }
   }
@@ -667,7 +684,6 @@
   $('#loginPromptBtn').addEventListener('click', () => navigate(loginPromptBtn.dataset.url || TVZA_LOGIN_URL));
   $('#railTvzaBtn').addEventListener('click', openTvzaApp);
   $('#sidebarTvzaAppBtn').addEventListener('click', openTvzaApp);
-  $('#tvzaHomeOpenBtn').addEventListener('click', openTvzaApp);
   $('#tvzaSideCloseBtn').addEventListener('click', closeTvzaApp);
   tvzaSideLoginBtn.addEventListener('click', () => navigate(TVZA_LOGIN_URL));
   tvzaSideFullBtn.addEventListener('click', openTvzaFull);
@@ -680,6 +696,7 @@
   $('#railFavoritesBtn').addEventListener('click', () => openSidebarTo('sideFavoritesSection'));
   $('#railProjectsBtn').addEventListener('click', () => openSidebarTo('sideProjectsSection'));
   $('#leftResizer').addEventListener('pointerdown', event => startResize('left', event));
+  $('#tvzaSideResizer').addEventListener('pointerdown', event => startResize('tvza', event));
   $('#rightResizer').addEventListener('pointerdown', event => startResize('right', event));
 
   $('#reloadBtn').addEventListener('click', () => {
@@ -749,6 +766,10 @@
 
   window.addEventListener('storage', event => {
     if (event.key === SETTINGS_KEY) settings = readSettings();
+    if (event.key === QUICK_LINKS_KEY) {
+      quickLinks = readQuickLinks();
+      renderLists();
+    }
   });
   window.addEventListener('resize', () => {
     applyLayout();
