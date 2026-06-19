@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1A1A2E" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/TvZ_Logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&display=swap" />
+  <script src="theme.js?v=3"></script>
+  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="browser.css?v=3" />
+  <title>TVZA Browser Einstellungen</title>
+</head>
+<body>
+  <div class="browser-settings-shell">
+    <header class="browser-topbar">
+      <a class="browser-brand" href="browser.html" aria-label="Zurück zum Browser">
+        <span class="tvz-wordmark">TvZ</span>
+        <span class="brand-divider"></span>
+        <span>
+          <strong>Browser Einstellungen</strong>
+          <small>Suche, Startseite und AI Assistant</small>
+        </span>
+      </a>
+      <div class="browser-window-actions">
+        <button class="browser-icon-btn" id="themeToggle" type="button" title="Theme wechseln" aria-label="Theme wechseln">◐</button>
+        <a class="browser-open-btn" href="browser.html">Zurück</a>
+      </div>
+    </header>
+
+    <main class="browser-settings-main">
+      <section class="browser-settings-panel">
+        <p class="browser-kicker">Default setup</p>
+        <h1>Browser als App vorbereiten</h1>
+
+        <section class="browser-profile-panel">
+          <div class="browser-panel-head">
+            <div>
+              <p class="browser-kicker">TVZA Profil</p>
+              <h2 id="profileTitle">Nicht angemeldet</h2>
+              <p id="profileSub">Melde dich mit dem gleichen TVZA Konto an.</p>
+            </div>
+            <div class="browser-profile-actions">
+              <a class="browser-open-btn" href="https://ti30x.github.io/tvza-app/login.html" id="profileLoginLink">Login öffnen</a>
+              <button class="browser-open-btn" id="profileSignOut" type="button" hidden>Abmelden</button>
+            </div>
+          </div>
+
+          <div class="browser-settings-grid browser-profile-grid" id="profileControls" hidden>
+            <label class="browser-setting-row">
+              <span>Anzeigename <small>Wird im TVZA Profil gespeichert.</small></span>
+              <input id="profileDisplayName" type="text" placeholder="Dein Name" />
+            </label>
+            <label class="browser-setting-row">
+              <span>E-Mail <small>Aus Firebase Auth.</small></span>
+              <input id="profileEmail" type="email" readonly />
+            </label>
+            <div class="browser-setting-row browser-module-row">
+              <span>Module <small>Wie in der TVZA App: sichtbare Module dieses Profils.</small></span>
+              <div id="profileModules" class="browser-module-list"></div>
+            </div>
+          </div>
+
+          <div class="browser-settings-actions" id="profileSaveRow" hidden>
+            <button class="btn btn-primary" id="profileSave" type="button">Profil speichern</button>
+          </div>
+          <p class="browser-settings-note" id="profileStatus">Dieses Profil nutzt die gleiche Firebase-Datenbank wie TVZA.</p>
+        </section>
+
+        <div class="browser-settings-grid">
+          <label class="browser-setting-row">
+            <span>Suchmaschine <small>Standard ist Google.</small></span>
+            <select id="searchEngine">
+              <option value="google">Google</option>
+              <option value="bing">Bing</option>
+              <option value="duckduckgo">DuckDuckGo</option>
+            </select>
+          </label>
+
+          <label class="browser-setting-row">
+            <span>AI Assistant <small>Claude ist als Standard voreingestellt.</small></span>
+            <select id="assistantProvider">
+              <option value="claude">Claude</option>
+              <option value="chatgpt">ChatGPT</option>
+              <option value="copilot">Microsoft Copilot</option>
+              <option value="custom">Eigene URL</option>
+            </select>
+          </label>
+
+          <label class="browser-setting-row">
+            <span>Eigene Assistant URL <small>Nur nötig, wenn "Eigene URL" gewählt ist.</small></span>
+            <input id="assistantUrl" type="url" placeholder="https://..." />
+          </label>
+
+          <label class="browser-setting-row">
+            <span>Startseite <small>Für die spätere Windows-App.</small></span>
+            <select id="homeMode">
+              <option value="start">TVZA Browser Home</option>
+              <option value="tvza">TVZA Family App</option>
+              <option value="public">TVZA Online Website</option>
+              <option value="custom">Eigene URL</option>
+            </select>
+          </label>
+
+          <label class="browser-setting-row">
+            <span>Eigene Start-URL <small>Nur bei eigener Startseite.</small></span>
+            <input id="homeUrl" type="url" placeholder="https://..." />
+          </label>
+        </div>
+
+        <div class="browser-settings-actions">
+          <button class="btn btn-secondary" id="resetSettings" type="button">Zurücksetzen</button>
+          <button class="btn btn-primary" id="saveSettings" type="button">Speichern</button>
+        </div>
+
+        <p class="browser-settings-note" id="settingsStatus">Bereit.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="browser-settings.js?v=3"></script>
+</body>
+</html>

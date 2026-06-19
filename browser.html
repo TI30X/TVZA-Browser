@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1A1A2E" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/TvZ_Logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&display=swap" />
+  <script src="theme.js?v=3"></script>
+  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="browser.css?v=3" />
+  <title>TVZA Browser</title>
+</head>
+<body class="browser-body">
+  <div class="browser-shell">
+    <header class="browser-topbar">
+      <a class="browser-brand" href="browser.html" aria-label="Zur TVZA Browser Startseite">
+        <span class="tvz-wordmark">TvZ</span>
+        <span class="brand-divider"></span>
+        <span>
+          <strong>TVZA Browser</strong>
+          <small>Tabs, Favoriten, Verlauf</small>
+        </span>
+      </a>
+
+      <div class="browser-window-actions">
+        <button class="browser-open-btn" id="assistantBtn" type="button" title="AI Assistant">Claude</button>
+        <button class="browser-icon-btn" id="themeToggle" type="button" title="Theme wechseln" aria-label="Theme wechseln">◐</button>
+        <div class="browser-account-stack">
+          <a class="browser-icon-btn" href="browser-settings.html" title="Einstellungen" aria-label="Einstellungen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06A1.65 1.65 0 0015 19.4a1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09A1.65 1.65 0 0015 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.36.76 1.12 1 1.6 1H21a2 2 0 010 4h-.09c-.84 0-1.28.44-1.51 1z"/></svg>
+          </a>
+          <button class="browser-login-chip" id="loginPromptBtn" type="button">Einloggen</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="browser-tabs-row" aria-label="Tabs">
+      <div class="browser-tabs" id="tabStrip"></div>
+      <button class="browser-new-tab" id="newTabBtn" type="button" title="Neuer Tab" aria-label="Neuer Tab">+</button>
+    </section>
+
+    <section class="browser-toolbar" aria-label="Browser Navigation">
+      <div class="browser-nav-buttons">
+        <button class="browser-icon-btn" id="backBtn" type="button" title="Zurück" aria-label="Zurück">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="browser-icon-btn" id="forwardBtn" type="button" title="Vorwärts" aria-label="Vorwärts">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="browser-icon-btn" id="reloadBtn" type="button" title="Neu laden" aria-label="Neu laden">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 10-2.34 5.66"/><path d="M20 4v7h-7"/></svg>
+        </button>
+        <button class="browser-icon-btn" id="homeBtn" type="button" title="Start" aria-label="Start">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+        </button>
+      </div>
+
+      <form class="browser-address" id="addressForm">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="addressInput" type="text" autocomplete="off" spellcheck="false" placeholder="Suche oder Webadresse eingeben" aria-label="Adresse oder Suche" />
+      </form>
+
+      <div class="browser-nav-buttons">
+        <button class="browser-icon-btn" id="favoriteBtn" type="button" title="Favorit" aria-label="Favorit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3z"/></svg>
+        </button>
+        <button class="browser-icon-btn" id="copyBtn" type="button" title="Adresse kopieren" aria-label="Adresse kopieren">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+        <button class="browser-open-btn" id="externalBtn" type="button">Extern öffnen</button>
+      </div>
+    </section>
+
+    <main class="browser-workspace" id="browserWorkspace">
+      <div class="browser-sidebar-rail" id="sidebarRail" aria-label="Kompakte Seitenleiste">
+        <button type="button" id="sidebarOpenBtn" title="Seitenleiste öffnen" aria-label="Seitenleiste öffnen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M9 5v14"/></svg>
+        </button>
+        <button type="button" data-url="tvza://start" title="Start" aria-label="Start">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+        </button>
+        <button type="button" data-url="https://www.google.com" title="Google" aria-label="Google">
+          <span>G</span>
+        </button>
+        <button type="button" id="railFavoritesBtn" title="Favoriten" aria-label="Favoriten">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3z"/></svg>
+        </button>
+        <button type="button" id="railProjectsBtn" title="Projekte" aria-label="Projekte">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        </button>
+      </div>
+      <aside class="browser-sidebar" aria-label="Browser Seitenleiste">
+        <div class="browser-sidebar-tools">
+          <button class="browser-sidebar-icon" type="button" id="sidebarCloseBtn" title="Seitenleiste schliessen" aria-label="Seitenleiste schliessen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M9 5v14"/></svg>
+          </button>
+        </div>
+        <section id="sideQuickStartSection">
+          <div class="browser-side-title">Schnellstart</div>
+          <div class="browser-speed-list">
+            <button type="button" data-url="https://www.wikipedia.org">Wikipedia</button>
+            <button type="button" data-url="https://developer.mozilla.org">MDN</button>
+            <button type="button" data-url="https://www.youtube.com">YouTube</button>
+            <button type="button" data-url="https://www.google.com">Google</button>
+          </div>
+        </section>
+
+        <section id="sideFavoritesSection">
+          <div class="browser-side-title">Favoriten</div>
+          <div class="browser-mini-list" id="favoritesList"></div>
+        </section>
+
+        <section id="sideRecentsSection">
+          <div class="browser-side-title">Recents</div>
+          <div class="browser-mini-list" id="recentsList"></div>
+        </section>
+
+        <section id="sideProjectsSection">
+          <div class="browser-side-title">Projekte</div>
+          <button class="browser-project-add" id="newProjectBtn" type="button">+ Neues Projekt</button>
+          <div class="browser-mini-list" id="historyList"></div>
+        </section>
+      </aside>
+      <div class="browser-resizer browser-resizer--left" id="leftResizer" title="Seitenleiste breiter oder schmaler ziehen"></div>
+
+      <section class="browser-stage" aria-live="polite">
+        <div class="browser-start" id="startPanel">
+          <div class="browser-start-card">
+            <section class="browser-home-identity">
+              <div>
+                <p class="browser-kicker">TVZA app top · online website</p>
+                <h1>TVZA Browser</h1>
+                <p class="browser-home-copy">Ein Windows-App-ready Browser für die TVZA Familie, Projekte von TvZ und direkten AI-Support.</p>
+              </div>
+              <div class="browser-home-actions">
+                <button type="button" data-url="https://ti30x.github.io/tvza-app/public.html">Online Website</button>
+                <button type="button" data-url="https://ti30x.github.io/tvza-app/index.html">TVZA App</button>
+              </div>
+            </section>
+
+            <section class="browser-search-section">
+              <label class="browser-search-label" for="heroSearchInput">Google Search</label>
+              <form class="browser-hero-search" id="heroSearchForm">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input id="heroSearchInput" type="text" autocomplete="off" spellcheck="false" placeholder="Search Google or enter a website address" aria-label="Suche oder Webadresse" />
+                <button type="submit">Suchen</button>
+              </form>
+            </section>
+
+            <section class="browser-family-panel" id="tvzaFamilyPanel" hidden>
+              <div class="browser-panel-head">
+                <div>
+                  <p class="browser-kicker">Eingeloggt</p>
+                  <h2>TVZA Family App</h2>
+                  <p id="tvzaUserLine">Direkt im Browser integriert.</p>
+                </div>
+                <button type="button" data-url="https://ti30x.github.io/tvza-app/index.html">Voll öffnen</button>
+              </div>
+              <iframe class="browser-family-frame" id="tvzaFamilyFrame" title="TVZA Family App"></iframe>
+            </section>
+
+            <section class="browser-signed-out" id="tvzaSignedOutPanel">
+              <div>
+                <p class="browser-kicker">TVZA Family App</p>
+                <h2>Einloggen, um die Familien-App hier zu sehen.</h2>
+                <p>Die Integration bleibt privat: Dashboard und Tracker erscheinen auf dem Startbildschirm nur nach Login.</p>
+              </div>
+              <button type="button" data-url="https://ti30x.github.io/tvza-app/login.html">Einloggen</button>
+            </section>
+
+            <section class="browser-projects-panel">
+              <div class="browser-panel-head">
+                <div>
+                  <p class="browser-kicker">Projects made by TvZ</p>
+                  <h2>Webbrowser mit direkter Integration</h2>
+                </div>
+                <button type="button" id="assistantHomeBtn">Assistant öffnen</button>
+              </div>
+              <div class="browser-start-grid">
+                <button type="button" data-url="https://www.google.com"><span>G</span>Google Search</button>
+                <button type="button" data-url="https://ti30x.github.io/tvza-app/public.html"><span>T</span>TVZA Online</button>
+                <button type="button" data-url="https://ti30x.github.io/tvza-app/index.html"><span>A</span>Family App</button>
+                <button type="button" data-url="https://claude.ai/new"><span>C</span>Claude</button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <iframe id="browserFrame" title="Browser Vorschau" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>
+
+        <div class="browser-frame-note" id="frameNote" hidden>
+          <strong>Falls die Seite leer bleibt, öffne sie extern.</strong>
+          <span>Viele große Websites dürfen aus Sicherheitsgründen nicht in einer App eingebettet werden. Der Tab bleibt trotzdem gespeichert.</span>
+          <button type="button" id="noteExternalBtn">Extern öffnen</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="assistant-drawer" id="assistantDrawer" aria-label="Claude Assistant" hidden>
+      <div class="browser-resizer browser-resizer--right" id="rightResizer" title="Assistant breiter oder schmaler ziehen"></div>
+      <div class="assistant-drawer-head">
+        <div>
+          <p class="browser-kicker">AI Assistant</p>
+          <h2>Claude</h2>
+        </div>
+        <button class="browser-icon-btn" id="assistantCloseBtn" type="button" aria-label="Assistant schließen">×</button>
+      </div>
+      <p class="assistant-drawer-copy">Claude öffnet als seitliche Browser-Erweiterung. Wenn Claude die Einbettung blockiert, nutze den externen Button.</p>
+      <div class="assistant-actions">
+        <button type="button" id="assistantExternalBtn">Extern öffnen</button>
+        <button type="button" id="assistantCopyBtn">Seitenkontext kopieren</button>
+      </div>
+      <iframe id="assistantFrame" title="Claude Assistant"></iframe>
+    </aside>
+
+    <div class="browser-status" id="browserStatus">Bereit</div>
+  </div>
+
+  <script src="browser.js?v=3"></script>
+</body>
+</html>
