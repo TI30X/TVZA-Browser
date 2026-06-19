@@ -300,6 +300,11 @@
   background: var(--surface-2);
 }
 
+.browser-app-rail-btn {
+  background: var(--brand-gradient) !important;
+  color: white !important;
+}
+
 .browser-sidebar {
   height: 100%;
   min-height: 0;
@@ -390,6 +395,56 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.browser-app-shortcut {
+  width: 100%;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in oklch, var(--accent), var(--border) 62%);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  background: var(--accent-bg);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.browser-app-shortcut:hover {
+  border-color: var(--accent);
+}
+
+.browser-app-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--brand-gradient);
+  color: white;
+  font-weight: 700;
+}
+
+.browser-app-shortcut strong,
+.browser-app-shortcut small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-app-shortcut strong {
+  font-size: 14px;
+}
+
+.browser-app-shortcut small {
+  color: var(--ink-soft);
+  font-size: 12px;
 }
 
 .browser-speed-list,
@@ -514,6 +569,98 @@
   min-height: 0;
   background: var(--surface);
   overflow: hidden;
+}
+
+.browser-side-app {
+  position: absolute;
+  left: calc(var(--browser-sidebar-width) + 6px);
+  top: 0;
+  bottom: 0;
+  z-index: 30;
+  width: min(420px, calc(100% - var(--browser-sidebar-width) - 6px));
+  padding: 14px;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 10px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 10px 0 28px oklch(0 0 0 / 0.16);
+}
+
+.browser-workspace.is-sidebar-closed .browser-side-app {
+  left: 40px;
+  width: min(420px, calc(100% - 40px));
+}
+
+.browser-side-app[hidden] {
+  display: none;
+}
+
+.browser-side-app-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.browser-side-app-head h2 {
+  font-size: 22px;
+}
+
+.browser-side-app-head p:not(.browser-kicker) {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.browser-side-app-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.browser-side-app-actions button {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.browser-side-app-actions button:first-child {
+  background: var(--brand-gradient);
+  border-color: transparent;
+  color: white;
+}
+
+.browser-side-app-login {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.browser-side-app-login strong,
+.browser-side-app-login span {
+  display: block;
+}
+
+.browser-side-app-login span {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.browser-side-app-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
 }
 
 .browser-stage iframe {
@@ -711,42 +858,6 @@
   place-items: center;
   background: var(--accent-bg);
   color: var(--accent);
-}
-
-.browser-frame-note {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  width: min(380px, calc(100% - 36px));
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: color-mix(in oklch, var(--surface), transparent 2%);
-  box-shadow: var(--shadow-md);
-}
-
-.browser-frame-note strong,
-.browser-frame-note span {
-  display: block;
-}
-
-.browser-frame-note span {
-  margin-top: 3px;
-  color: var(--ink-soft);
-  font-size: 13px;
-}
-
-.browser-frame-note button {
-  margin-top: 10px;
-  min-height: 36px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--accent);
-  color: white;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .browser-status {
@@ -970,6 +1081,11 @@
 
   .browser-resizer--left {
     display: none;
+  }
+
+  .browser-side-app {
+    left: 0;
+    width: min(420px, 100%);
   }
 
   .browser-toolbar {

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&display=swap" />
   <script src="theme.js?v=3"></script>
   <link rel="stylesheet" href="style.css?v=3" />
-  <link rel="stylesheet" href="browser.css?v=3" />
+  <link rel="stylesheet" href="browser.css?v=5" />
   <title>TVZA Browser</title>
 </head>
 <body class="browser-body">
@@ -71,7 +71,6 @@
         <button class="browser-icon-btn" id="copyBtn" type="button" title="Adresse kopieren" aria-label="Adresse kopieren">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
         </button>
-        <button class="browser-open-btn" id="externalBtn" type="button">Extern öffnen</button>
       </div>
     </section>
 
@@ -82,6 +81,9 @@
         </button>
         <button type="button" data-url="tvza://start" title="Start" aria-label="Start">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+        </button>
+        <button type="button" id="railTvzaBtn" class="browser-app-rail-btn" title="TVZA Family App" aria-label="TVZA Family App">
+          <span>T</span>
         </button>
         <button type="button" data-url="https://www.google.com" title="Google" aria-label="Google">
           <span>G</span>
@@ -99,6 +101,16 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M9 5v14"/></svg>
           </button>
         </div>
+        <section id="sideAppsSection">
+          <div class="browser-side-title">Apps</div>
+          <button class="browser-app-shortcut" type="button" id="sidebarTvzaAppBtn">
+            <span class="browser-app-mark">T</span>
+            <span>
+              <strong>TVZA Family</strong>
+              <small id="tvzaSidebarStatus">Login prüfen...</small>
+            </span>
+          </button>
+        </section>
         <section id="sideQuickStartSection">
           <div class="browser-side-title">Schnellstart</div>
           <div class="browser-speed-list">
@@ -127,6 +139,26 @@
       </aside>
       <div class="browser-resizer browser-resizer--left" id="leftResizer" title="Seitenleiste breiter oder schmaler ziehen"></div>
 
+      <aside class="browser-side-app" id="tvzaSideApp" aria-label="TVZA Family App" hidden>
+        <div class="browser-side-app-head">
+          <div>
+            <p class="browser-kicker">Sidebar App</p>
+            <h2>TVZA Family</h2>
+            <p id="tvzaUserLine">Mit deinem TVZA Konto verbunden.</p>
+          </div>
+          <button class="browser-icon-btn" id="tvzaSideCloseBtn" type="button" aria-label="TVZA App schliessen">×</button>
+        </div>
+        <div class="browser-side-app-actions">
+          <button type="button" id="tvzaSideLoginBtn">Einloggen</button>
+          <button type="button" id="tvzaSideFullBtn">Im Tab öffnen</button>
+        </div>
+        <div class="browser-side-app-login" id="tvzaSideSignedOut">
+          <strong>Einloggen, um TVZA hier zu nutzen.</strong>
+          <span>Die Family App bleibt links als Browser-App angeheftet.</span>
+        </div>
+        <iframe class="browser-side-app-frame" id="tvzaFamilyFrame" title="TVZA Family App"></iframe>
+      </aside>
+
       <section class="browser-stage" aria-live="polite">
         <div class="browser-start" id="startPanel">
           <div class="browser-start-card">
@@ -151,25 +183,13 @@
               </form>
             </section>
 
-            <section class="browser-family-panel" id="tvzaFamilyPanel" hidden>
-              <div class="browser-panel-head">
-                <div>
-                  <p class="browser-kicker">Eingeloggt</p>
-                  <h2>TVZA Family App</h2>
-                  <p id="tvzaUserLine">Direkt im Browser integriert.</p>
-                </div>
-                <button type="button" data-url="https://ti30x.github.io/tvza-app/index.html">Voll öffnen</button>
-              </div>
-              <iframe class="browser-family-frame" id="tvzaFamilyFrame" title="TVZA Family App"></iframe>
-            </section>
-
             <section class="browser-signed-out" id="tvzaSignedOutPanel">
               <div>
                 <p class="browser-kicker">TVZA Family App</p>
-                <h2>Einloggen, um die Familien-App hier zu sehen.</h2>
-                <p>Die Integration bleibt privat: Dashboard und Tracker erscheinen auf dem Startbildschirm nur nach Login.</p>
+                <h2>TVZA ist links als Sidebar-App angeheftet.</h2>
+                <p id="tvzaHomeHint">Öffne die TVZA Family App über die linke Seitenleiste. Nach dem Login erscheint sie dort direkt im Browser.</p>
               </div>
-              <button type="button" data-url="https://ti30x.github.io/tvza-app/login.html">Einloggen</button>
+              <button type="button" id="tvzaHomeOpenBtn">TVZA öffnen</button>
             </section>
 
             <section class="browser-projects-panel">
@@ -192,11 +212,6 @@
 
         <iframe id="browserFrame" title="Browser Vorschau" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen"></iframe>
 
-        <div class="browser-frame-note" id="frameNote" hidden>
-          <strong>Falls die Seite leer bleibt, öffne sie extern.</strong>
-          <span>Viele große Websites dürfen aus Sicherheitsgründen nicht in einer App eingebettet werden. Der Tab bleibt trotzdem gespeichert.</span>
-          <button type="button" id="noteExternalBtn">Extern öffnen</button>
-        </div>
       </section>
     </main>
 
@@ -209,9 +224,9 @@
         </div>
         <button class="browser-icon-btn" id="assistantCloseBtn" type="button" aria-label="Assistant schließen">×</button>
       </div>
-      <p class="assistant-drawer-copy">Claude öffnet als seitliche Browser-Erweiterung. Wenn Claude die Einbettung blockiert, nutze den externen Button.</p>
+      <p class="assistant-drawer-copy">Claude öffnet als seitliche Browser-Erweiterung. Falls Claude die Einbettung blockiert, öffne Claude direkt.</p>
       <div class="assistant-actions">
-        <button type="button" id="assistantExternalBtn">Extern öffnen</button>
+        <button type="button" id="assistantExternalBtn">Claude öffnen</button>
         <button type="button" id="assistantCopyBtn">Seitenkontext kopieren</button>
       </div>
       <iframe id="assistantFrame" title="Claude Assistant"></iframe>
@@ -220,6 +235,6 @@
     <div class="browser-status" id="browserStatus">Bereit</div>
   </div>
 
-  <script src="browser.js?v=3"></script>
+  <script src="browser.js?v=5"></script>
 </body>
 </html>

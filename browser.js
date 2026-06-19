@@ -35,21 +35,24 @@
   const heroSearchInput = $('#heroSearchInput');
   const frame = $('#browserFrame');
   const startPanel = $('#startPanel');
-  const frameNote = $('#frameNote');
   const status = $('#browserStatus');
   const favoritesList = $('#favoritesList');
   const recentsList = $('#recentsList');
   const historyList = $('#historyList');
-  const tvzaFamilyPanel = $('#tvzaFamilyPanel');
   const tvzaSignedOutPanel = $('#tvzaSignedOutPanel');
   const tvzaFamilyFrame = $('#tvzaFamilyFrame');
   const tvzaUserLine = $('#tvzaUserLine');
+  const tvzaSideApp = $('#tvzaSideApp');
+  const tvzaSideSignedOut = $('#tvzaSideSignedOut');
+  const tvzaSideLoginBtn = $('#tvzaSideLoginBtn');
+  const tvzaSideFullBtn = $('#tvzaSideFullBtn');
+  const tvzaSidebarStatus = $('#tvzaSidebarStatus');
+  const tvzaHomeHint = $('#tvzaHomeHint');
   const assistantDrawer = $('#assistantDrawer');
   const assistantFrame = $('#assistantFrame');
   const browserWorkspace = $('#browserWorkspace');
   const loginPromptBtn = $('#loginPromptBtn');
 
-  let embedTimer = null;
   let tabs = readJson(TAB_KEY, null);
   let activeTabId = localStorage.getItem(ACTIVE_KEY);
   let favorites = readJson(FAVORITES_KEY, []);
@@ -57,6 +60,7 @@
   let projects = readJson(PROJECTS_KEY, null);
   let settings = readSettings();
   let layout = readLayout();
+  let tvzaLoggedIn = false;
 
   if (!Array.isArray(tabs) || !tabs.length) {
     tabs = [makeTab()];
@@ -186,14 +190,6 @@
 
   function displayUrl(url) {
     return url === START_URL ? '' : url;
-  }
-
-  function isExternalUrl(url) {
-    try {
-      return new URL(url).origin !== location.origin;
-    } catch (error) {
-      return false;
-    }
   }
 
   function setStatus(text) {
@@ -365,8 +361,6 @@
   function renderPage(tab) {
     addressInput.value = displayUrl(tab.url);
     heroSearchInput.value = '';
-    frameNote.hidden = true;
-    clearTimeout(embedTimer);
 
     if (tab.url === START_URL) {
       startPanel.hidden = false;
@@ -382,12 +376,6 @@
     frame.src = tab.url;
     document.title = `${tab.title} - TVZA Browser`;
     setStatus(`Lade ${tab.url}`);
-
-    if (isExternalUrl(tab.url)) {
-      embedTimer = window.setTimeout(() => {
-        frameNote.hidden = false;
-      }, 1400);
-    }
   }
 
   function renderLists() {
@@ -429,7 +417,6 @@
     $('#backBtn').disabled = tab.index <= 0;
     $('#forwardBtn').disabled = tab.index >= tab.entries.length - 1;
     $('#favoriteBtn').classList.toggle('is-active', favorites.some(item => item.url === tab.url));
-    $('#externalBtn').disabled = tab.url === START_URL;
     $('#copyBtn').disabled = tab.url === START_URL;
   }
 
@@ -517,11 +504,6 @@
     setStatus(exists ? 'Favorit entfernt' : 'Favorit gespeichert');
   }
 
-  function openExternal() {
-    const tab = activeTab();
-    if (tab.url !== START_URL) window.open(tab.url, '_blank', 'noopener');
-  }
-
   function applyLayout() {
     layout.assistantWidth = clamp(layout.assistantWidth, 320, assistantMaxWidth());
     document.documentElement.style.setProperty('--browser-sidebar-width', `${layout.sidebarWidth}px`);
@@ -603,14 +585,39 @@
     assistantDrawer.hidden = true;
   }
 
+  function openTvzaApp() {
+    tvzaSideApp.hidden = false;
+    if (tvzaLoggedIn) {
+      tvzaFamilyFrame.src = TVZA_INDEX_URL;
+      setStatus('TVZA Family App links geöffnet.');
+      return;
+    }
+    tvzaFamilyFrame.removeAttribute('src');
+    setStatus('Bitte bei TVZA einloggen.');
+  }
+
+  function closeTvzaApp() {
+    tvzaSideApp.hidden = true;
+  }
+
+  function openTvzaFull() {
+    navigate(tvzaLoggedIn ? TVZA_INDEX_URL : TVZA_LOGIN_URL);
+  }
+
   async function initTvzaHomeIntegration() {
     try {
       const { auth, getProfile } = await import('./firebase-config.js');
       auth.onAuthStateChanged(async user => {
+        tvzaLoggedIn = !!user;
         if (!user) {
-          tvzaFamilyPanel.hidden = true;
           tvzaSignedOutPanel.hidden = false;
+          tvzaSideSignedOut.hidden = false;
+          tvzaSideLoginBtn.hidden = false;
+          tvzaSideFullBtn.textContent = 'Login im Tab';
           tvzaFamilyFrame.removeAttribute('src');
+          tvzaUserLine.textContent = 'Melde dich an, um TVZA hier zu nutzen.';
+          tvzaSidebarStatus.textContent = 'Einloggen benötigt';
+          tvzaHomeHint.textContent = 'Öffne TVZA links als Sidebar-App. Zum Entsperren nutzt du den normalen TVZA Login.';
           loginPromptBtn.textContent = 'Einloggen';
           loginPromptBtn.dataset.url = TVZA_LOGIN_URL;
           return;
@@ -618,16 +625,21 @@
 
         const profile = await getProfile(user);
         const name = profile.displayName || user.displayName || user.email || 'TVZA';
-        tvzaUserLine.textContent = `${name} ist angemeldet. Dashboard direkt im Browser.`;
-        tvzaFamilyFrame.src = TVZA_INDEX_URL;
-        tvzaFamilyPanel.hidden = false;
+        tvzaUserLine.textContent = `${name} ist angemeldet.`;
+        if (!tvzaSideApp.hidden) tvzaFamilyFrame.src = TVZA_INDEX_URL;
         tvzaSignedOutPanel.hidden = true;
+        tvzaSideSignedOut.hidden = true;
+        tvzaSideLoginBtn.hidden = true;
+        tvzaSideFullBtn.textContent = 'Im Tab öffnen';
+        tvzaSidebarStatus.textContent = name.length > 22 ? `${name.slice(0, 20)}…` : name;
+        tvzaHomeHint.textContent = 'TVZA Family ist bereit und links als Sidebar-App angeheftet.';
         loginPromptBtn.textContent = name.length > 18 ? `${name.slice(0, 16)}…` : name;
         loginPromptBtn.dataset.url = 'browser-settings.html';
       });
     } catch (error) {
-      tvzaFamilyPanel.hidden = true;
       tvzaSignedOutPanel.hidden = false;
+      tvzaSideSignedOut.hidden = false;
+      tvzaSidebarStatus.textContent = 'Firebase prüfen';
     }
   }
 
@@ -647,14 +659,18 @@
   $('#forwardBtn').addEventListener('click', () => go(1));
   $('#homeBtn').addEventListener('click', () => navigate(homeTarget()));
   $('#favoriteBtn').addEventListener('click', toggleFavorite);
-  $('#externalBtn').addEventListener('click', openExternal);
-  $('#noteExternalBtn').addEventListener('click', openExternal);
   $('#assistantBtn').addEventListener('click', openAssistant);
   $('#assistantHomeBtn').addEventListener('click', openAssistant);
   $('#assistantCloseBtn').addEventListener('click', closeAssistant);
   $('#assistantExternalBtn').addEventListener('click', openAssistantExternal);
   $('#assistantCopyBtn').addEventListener('click', copyAssistantPrompt);
   $('#loginPromptBtn').addEventListener('click', () => navigate(loginPromptBtn.dataset.url || TVZA_LOGIN_URL));
+  $('#railTvzaBtn').addEventListener('click', openTvzaApp);
+  $('#sidebarTvzaAppBtn').addEventListener('click', openTvzaApp);
+  $('#tvzaHomeOpenBtn').addEventListener('click', openTvzaApp);
+  $('#tvzaSideCloseBtn').addEventListener('click', closeTvzaApp);
+  tvzaSideLoginBtn.addEventListener('click', () => navigate(TVZA_LOGIN_URL));
+  tvzaSideFullBtn.addEventListener('click', openTvzaFull);
   $('#sidebarCloseBtn').addEventListener('click', () => {
     layout.sidebarMode = 'closed';
     applyLayout();
@@ -710,7 +726,6 @@
 
   frame.addEventListener('load', () => {
     const tab = activeTab();
-    if (!isExternalUrl(tab.url)) clearTimeout(embedTimer);
     if (tab.url !== START_URL) setStatus(`Geöffnet: ${tab.url}`);
   });
 
@@ -729,6 +744,7 @@
       closeTab(activeTabId);
     }
     if (event.key === 'Escape' && !assistantDrawer.hidden) closeAssistant();
+    if (event.key === 'Escape' && !tvzaSideApp.hidden) closeTvzaApp();
   });
 
   window.addEventListener('storage', event => {
