@@ -8,6 +8,7 @@
   const FAVORITES_KEY = 'tvza.browser.favorites';
   const HISTORY_KEY = 'tvza.browser.history';
   const PROJECTS_KEY = 'tvza.browser.projects';
+  const PROJECT_COLLAPSED_KEY = 'tvza.browser.collapsedProjects';
   const QUICK_LINKS_KEY = 'tvza.browser.quickLinks';
   const SETTINGS_KEY = 'tvza.browser.settings';
   const LAYOUT_KEY = 'tvza.browser.layout';
@@ -67,6 +68,7 @@
   let browserHistory = readJson(HISTORY_KEY, []);
   let quickLinks = readQuickLinks();
   let projects = readJson(PROJECTS_KEY, null);
+  let collapsedProjects = readJson(PROJECT_COLLAPSED_KEY, {});
   let settings = readSettings();
   let layout = readLayout();
   let tvzaLoggedIn = false;
@@ -173,6 +175,7 @@
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
     localStorage.setItem(HISTORY_KEY, JSON.stringify(browserHistory.slice(0, 200)));
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+    localStorage.setItem(PROJECT_COLLAPSED_KEY, JSON.stringify(collapsedProjects));
   }
 
   function normalizeInput(raw) {
@@ -416,9 +419,13 @@
   function renderProjectGroups() {
     return orderedProjects().map(project => {
       const items = projectTabItems(project);
+      const collapsed = isProjectCollapsed(project.id);
       return `
-      <div class="browser-project-group" style="${projectStyle(project)}">
+      <div class="browser-project-group ${collapsed ? 'is-collapsed' : ''}" style="${projectStyle(project)}">
         <div class="browser-project-head">
+          <button class="browser-project-toggle" type="button" data-toggle-project="${escapeAttr(project.id)}" aria-label="Tabgruppe ${escapeAttr(project.name)} ${collapsed ? 'aufklappen' : 'zuklappen'}" title="${collapsed ? 'Aufklappen' : 'Zuklappen'}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
           <button class="browser-project-title" type="button" data-open-project="${escapeAttr(project.id)}">
             <span>${escapeHtml(project.name)}</span>
             <small>${items.length} ${items.length === 1 ? 'Tab' : 'Tabs'}</small>
@@ -426,11 +433,28 @@
           <button class="browser-project-rename" type="button" data-rename-project="${escapeAttr(project.id)}" aria-label="Tabgruppe ${escapeAttr(project.name)} umbenennen" title="Tabgruppe umbenennen">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
           </button>
+          <button class="browser-project-delete" type="button" data-delete-project="${escapeAttr(project.id)}" aria-label="Tabgruppe ${escapeAttr(project.name)} löschen" title="Tabgruppe löschen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 15h10l1-15"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          </button>
         </div>
-        ${items.filter(item => item.url !== START_URL).slice(0, 4).map(itemButton).join('')}
+        <div class="browser-project-items">
+          ${collapsed ? '' : items.filter(item => item.url !== START_URL).slice(0, 4).map(item => projectItemButton(item, project.id)).join('')}
+        </div>
       </div>
     `;
     }).join('');
+  }
+
+  function isProjectCollapsed(projectId) {
+    return Boolean(collapsedProjects?.[projectId]);
+  }
+
+  function toggleProjectCollapsed(projectId) {
+    if (!projects[projectId]?.custom) return;
+    collapsedProjects = { ...(collapsedProjects || {}), [projectId]: !isProjectCollapsed(projectId) };
+    if (!collapsedProjects[projectId]) delete collapsedProjects[projectId];
+    saveState();
+    renderLists();
   }
 
   function projectTabItems(project) {
@@ -448,6 +472,20 @@
         <strong>${escapeHtml(titleFromUrl(item.url))}</strong>
         <small>${escapeHtml(item.url)}</small>
       </button>
+    `;
+  }
+
+  function projectItemButton(item, projectId) {
+    return `
+      <div class="browser-project-item">
+        <button type="button" data-url="${escapeAttr(item.url)}">
+          <strong>${escapeHtml(titleFromUrl(item.url))}</strong>
+          <small>${escapeHtml(item.url)}</small>
+        </button>
+        <button class="browser-project-remove-tab" type="button" data-remove-tab-project="${escapeAttr(projectId)}" data-remove-tab-url="${escapeAttr(item.url)}" aria-label="Tab aus Gruppe entfernen" title="Aus Gruppe entfernen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
     `;
   }
 
@@ -472,9 +510,8 @@
 
   function newTab(url = START_URL, projectId = null) {
     const normalized = normalizeInput(url);
-    const inheritedProject = projectId || (activeTab()?.projectId && projects[activeTab().projectId]?.custom ? activeTab().projectId : null);
     const tab = makeTab(normalized);
-    if (inheritedProject) tab.projectId = inheritedProject;
+    if (projectId && projects[projectId]?.custom) tab.projectId = projectId;
     tabs.push(tab);
     activeTabId = tab.id;
     updateProjectFromTab(tab);
@@ -516,6 +553,36 @@
     saveState();
     renderLists();
     setStatus(`Tabgruppe heisst jetzt ${name}.`);
+  }
+
+  function removeTabFromProject(projectId, url) {
+    const project = projects[projectId];
+    if (!project?.custom || !url) return;
+    tabs.forEach(tab => {
+      if (tab.projectId === projectId && tab.url === url) tab.projectId = null;
+    });
+    project.tabs = (project.tabs || []).filter(tab => tab.url !== url);
+    project.updatedAt = Date.now();
+    saveState();
+    render();
+    setStatus('Tab aus Tabgruppe entfernt.');
+  }
+
+  function deleteProject(projectId) {
+    const project = projects[projectId];
+    if (!project?.custom) return;
+    const ok = window.confirm(`Tabgruppe "${project.name}" löschen? Offene Tabs bleiben offen, werden aber aus der Gruppe gelöst.`);
+    if (!ok) return;
+    tabs.forEach(tab => {
+      if (tab.projectId === projectId) tab.projectId = null;
+    });
+    delete projects[projectId];
+    if (collapsedProjects?.[projectId]) {
+      delete collapsedProjects[projectId];
+    }
+    saveState();
+    render();
+    setStatus('Tabgruppe gelöscht.');
   }
 
   function cleanProjectName(value, fallback = 'Tabgruppe') {
@@ -902,6 +969,21 @@
   });
 
   document.addEventListener('click', event => {
+    const projectToggle = event.target.closest('[data-toggle-project]');
+    if (projectToggle) {
+      toggleProjectCollapsed(projectToggle.dataset.toggleProject);
+      return;
+    }
+    const projectTabRemove = event.target.closest('[data-remove-tab-project]');
+    if (projectTabRemove) {
+      removeTabFromProject(projectTabRemove.dataset.removeTabProject, projectTabRemove.dataset.removeTabUrl);
+      return;
+    }
+    const projectDelete = event.target.closest('[data-delete-project]');
+    if (projectDelete) {
+      deleteProject(projectDelete.dataset.deleteProject);
+      return;
+    }
     const projectRename = event.target.closest('[data-rename-project]');
     if (projectRename) {
       renameProject(projectRename.dataset.renameProject);

@@ -539,6 +539,14 @@
   overflow: hidden;
 }
 
+.browser-project-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 6px;
+  align-items: stretch;
+}
+
 .browser-speed-list button {
   height: 46px;
   padding: 10px 12px;
@@ -605,9 +613,15 @@
 .browser-project-head {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 38px;
+  grid-template-columns: 32px minmax(0, 1fr) 38px 38px;
   gap: 6px;
   align-items: stretch;
+}
+
+.browser-project-items {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
 }
 
 .browser-project-title {
@@ -624,7 +638,10 @@
   text-align: left;
 }
 
-.browser-project-rename {
+.browser-project-toggle,
+.browser-project-rename,
+.browser-project-delete,
+.browser-project-remove-tab {
   width: 38px;
   height: 46px;
   padding: 0;
@@ -638,12 +655,40 @@
   cursor: pointer;
 }
 
-.browser-project-rename:hover {
+.browser-project-toggle {
+  width: 32px;
+  color: var(--group-color);
+}
+
+.browser-project-remove-tab {
+  height: 46px;
+}
+
+.browser-project-toggle:hover,
+.browser-project-rename:hover,
+.browser-project-delete:hover,
+.browser-project-remove-tab:hover {
   border-color: var(--group-color);
   background: color-mix(in oklch, var(--group-color), var(--surface-2) 86%);
 }
 
-.browser-project-rename svg {
+.browser-project-toggle svg {
+  transform: rotate(90deg);
+  transition: transform 140ms ease;
+}
+
+.browser-project-group.is-collapsed .browser-project-toggle svg {
+  transform: rotate(0deg);
+}
+
+.browser-project-delete {
+  color: var(--danger, #ef4444);
+}
+
+.browser-project-toggle svg,
+.browser-project-rename svg,
+.browser-project-delete svg,
+.browser-project-remove-tab svg {
   width: 16px;
   height: 16px;
   fill: none;
